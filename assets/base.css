@@ -125,6 +125,62 @@
 
 }
 
+.circos-control-tabs {
+    margin-right: 0px;
+    background-color: #8cd2fa !important;
+    font-size: 16pt;
+    font-weight: bold;
+    width: 800px !important;
+}
+
+.circos-tab {
+    overflow-y: auto;
+    padding-right: 15px;
+}
+.circos-controls {
+    width: 100%;
+    overflow: auto;
+}
+.circos-control-tabs .tab {
+    background-color: #fafafa !important;
+    color: #2c8cff !important;
+    padding: 10px;
+    border-color: #6e6d6d !important;
+}
+
+.circos-control-tabs .tab--selected {
+    border-top: solid 5px #fa0202 !important;
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2), 0 3px 10px 0 rgba(0, 0, 0, 0.19);
+    color: #fa0202 !important;
+}
+
+
+#circos-tabs-orig {
+    display: none;
+}
+
+#circos-tabs-orig-parent {
+    display: none;
+}
+#circos-control-tabs .Select-value-icon {
+    background-color: #232323;
+}
+
+#circos-control-tabs .Select-control, #circos-control-tabs .Select-menu-outer {
+    border: solid 1px #545454;
+    background-color: #262b3d !important;
+    width: 140px !important;
+}
+#circos-control-tabs span.Select-value-label {
+    color: #E2EFFA !important;
+}
+#circos-control-tabs .Select-input {
+    padding: 0px;
+}
+
+.tab.jsx-3468109796 {
+    background-color: rgb(38, 43, 61);
+}
 
 /* Base Styles
 –––––––––––––––––––––––––––––––––––––––––––––––––– */
@@ -139,6 +195,7 @@ body {
   font-weight: 400;
   font-family: "Open Sans", "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif;
   color: rgb(50, 50, 50); }
+
 
 
 /* Typography
@@ -338,6 +395,9 @@ th:last-child,
 td:last-child {
   padding-right: 0; }
 
+td.CalendarDay {
+  padding: 0;
+}
 
 /* Spacing
 –––––––––––––––––––––––––––––––––––––––––––––––––– */

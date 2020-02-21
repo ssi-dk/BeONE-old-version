@@ -4,17 +4,27 @@ import dash_html_components as html
 import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, ClientsideFunction
 from components import html_components as hc
+from flask_caching import Cache
 
 import numpy as np
 import pandas as pd
 import datetime
 from datetime import datetime as dt
 import pathlib
+import keys
 
 app = dash.Dash(
     __name__,
-    meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}],
+    meta_tags=[{"content": "width=device-width, initial-scale=1"}],
 )
+
+app.title = "beone"
+app.config["suppress_callback_exceptions"] = True
+cache = Cache(app.server, config={
+    'CACHE_TYPE': 'filesystem',
+    'CACHE_DIR': keys.cache_location
+})
+cache_timeout = 60
 
 server = app.server
 app.config.suppress_callback_exceptions = True
@@ -55,26 +65,7 @@ day_list = [
     "Saturday",
     "Sunday",
 ]
-
-tabs_styles = {
-    'height': '54px',
-    'fontSize': 24,
-    'text-align': 'center',
-    'padding-left': '5%'
-}
-tab_style = {
-    'borderBottom': '1px solid #d6d6d6',
-    'padding': '6px',
-    'fontWeight': 'bold'
-}
-
-tab_selected_style = {
-    'borderTop': '1px solid #d6d6d6',
-    'borderBottom': '1px solid #d6d6d6',
-    'backgroundColor': '#119DFF',
-    'color': 'white',
-    'padding': '6px'
-}
+KEY = "BIFROST_DB_KEY"
 
 external_scripts = [
     'https://kit.fontawesome.com/24170a81ff.js',
@@ -116,44 +107,6 @@ def top_bar():
         style={'fontSize': 24, 'background-color': "#e3f2fd", 'textAlign': 'center'}
     )
 
-def html_topbar():
-    return html.Div([
-        html.Div([
-            html.Ul([
-                html.H5("Select Database"),
-                dcc.RadioItems(id="radiobuttons1",
-                               options=[
-                                   {"label": "All ", "value": "all"},
-                                   {"label": "Local ", "value": "active"},
-                                   {"label": "Remote ", "value": "custom"},
-                               ],
-                               value="active",
-                               labelStyle={"display": "inline-block"},
-                               className="dcc_control",
-                               ),
-                dcc.Dropdown(
-                    id="clinic-select",
-                    options=[{"label": i, "value": i} for i in clinic_list],
-                    value=clinic_list[0]
-                )
-            ], className='four columns', style={'display': 'inline-block'}),
-            html.Div([
-                html.H5("Select Time Range", style={'padding-bottom':'22px'}),
-                dcc.DatePickerRange(
-                    id="date-picker-select",
-                    start_date=dt(2014, 1, 1),
-                    end_date=dt(2014, 1, 15),
-                    min_date_allowed=dt(2014, 1, 1),
-                    max_date_allowed=dt(2014, 12, 31),
-                    initial_visible_month=dt(2014, 1, 1),
-                )
-            ], className='six columns', style={'display':'inline-block', 'padding-left':'5px'}),
-        ], className='pretty_container five columns', style={"border":"1px DarkGrey solid", 'padding-bottom':'5px', 'padding-left':'5px'}),
-        html.Div([
-            html.H5("News")
-        ], className='pretty_container five columns', style={"border":"1px DarkGrey solid", 'padding-bottom':'5px', 'padding-left':'5px', 'height':'120px', 'text-align':'center'})
-    ], className='row', style={'padding-top':'5px', 'padding-bottom':'10px'})
-
 def description_card():
     """
 
@@ -165,7 +118,6 @@ def description_card():
             html.H5("Welcome to BeONE")
         ],
     )
-
 
 def generate_patient_volume_heatmap(start, end, clinic, hm_click, admit_type, reset):
     """
@@ -574,36 +526,21 @@ def create_table_figure(
 app.layout = html.Div(
     id="app-container",
     children=[
-        # Left column
-        # html.Div(
-        #     id="left-column",
-        #     className="one-third column left__section",
-        #     children=[generate_control_card()]
-        #     + [
-        #         html.Div(
-        #             ["initial child"], id="output-clientside", style={"display": "none"}
-        #         )
-        #     ], style={'background-color': "#EAEDED"}
-        # ),
-        # Right column
+
         html.Div([
                 html.Div(id='content', children=[
-                    html_topbar(),
+                    hc.html_topbar(),
                     html.Nav([
                         dcc.Tabs(
-                            id="stitching-tabs",
+                            id="control-tabs",
                             value="canvas-tab",
                             children=[
-                                dcc.Tab(label="Data Browser", value="canvas-tab", style=tab_style,
-                                        selected_style=tab_selected_style),
-                                dcc.Tab(label="Analyses", value="result-tab", style=tab_style,
-                                        selected_style=tab_selected_style),
-                                dcc.Tab(label="Reports", value="help-tab", style=tab_style,
-                                        selected_style=tab_selected_style),
-                                dcc.Tab(label="Bifrost", value="bifrost-tab", style=tab_style,
-                                        selected_style=tab_selected_style),
+                                dcc.Tab(className='circos-tab', label="Data Browser", value="canvas-tab"),
+                                dcc.Tab(className='circos-tab', label="Analyses", value="result-tab"),
+                                dcc.Tab(className='circos-tab', label="Reports", value="help-tab"),
+                                dcc.Tab(className='circos-tab', label="Bifrost", value="bifrost-tab"),
                             ],
-                            className='tabs six columns', style=tabs_styles
+                            className='circos-control-tabs six columns'
                         ),
                     ], className='navbar navbar-expand topbar'),
                     html.Main([
@@ -614,7 +551,6 @@ app.layout = html.Div(
                 ])
                 #description_card(),
 
-
                 #html.Div(className="upload_zone", id="upload-stitch", children=[]),
                 #html.Div(id="sh_x", hidden=True),
                 #html.Div(id="stitched-res", hidden=True),
@@ -622,199 +558,41 @@ app.layout = html.Div(
                 ], id='content-wrapper', className="d-flex flex-column",
         ),
 
-        # html.Div(
-        #     id="right-column",
-        #     className="two-thirds column right__section",
-        #     children=[
-        #         # Patient Volume Heatmap
-        #         top_bar(),
-        #         html.Div(
-        #             id="patient_volume_card",
-        #             children=[
-        #                 html.B("Patient Volume"),
-        #                 html.Hr(),
-        #                 dcc.Graph(id="patient_volume_hm"),
-        #             ],
-        #         ),
-        #         # Patient Wait time by Department
-        #         html.Div(
-        #             id="wait_time_card",
-        #             children=[
-        #                 html.B("Patient Wait Time and Satisfactory Scores"),
-        #                 html.Hr(),
-        #                 html.Div(id="wait_time_table", children=initialize_table()),
-        #             ],
-        #         ),
-        #     ],
-        # ),
     ],
 )
 
-# @app.callback(
-#     Output("tabs-content", "children"), [Input("stitching-tabs", "value")]
-# )
-# def fill_tab(tab):
-#     if tab == "canvas-tab":
-#         return html.Div(["Test Result"])
-#     elif tab == "result-tab":
-#         return html.Div(["Test Result"])
-#     return [
-#         html.Img(id="bla", src=app.get_asset_url("stitch_demo.gif"), width=canvas_width)
-#     ]
+@app.callback(
+    [Output('run-list', 'options'),
+     Output('species-list', 'options')],
+    [Input('run-list', 'value')])
+def update_dropdowns(selected_run):
+    return hc.dropdowns_options(selected_run)
 
 @app.callback(
-    Output("patient_volume_hm", "figure"),
     [
-        Input("date-picker-select", "start_date"),
-        Input("date-picker-select", "end_date"),
-        Input("clinic-select", "value"),
-        Input("patient_volume_hm", "clickData"),
-        Input("admit-select", "value"),
-        Input("reset-btn", "n_clicks"),
+        Output("datatable-ssi_stamper", "data"),
+        Output("datatable-ssi_stamper", "virtualization")
+    ],
+    [
+     Input("placeholder0", "children"),
+     Input("sample-store", "data")
     ],
 )
+def update_filter_table(ignore, sample_store):
+    if len(sample_store) == 0:
+        return ["0", [{}], False]
+    sample_ids = list(
+        map(lambda x: x["_id"], sample_store))
 
-def update_heatmap(start, end, clinic, hm_click, admit_type, reset_click):
-    start = start + " 00:00:00"
-    end = end + " 00:00:00"
+    samples = import_data.filter_all(
+        sample_ids=sample_ids)
 
-    reset = False
-    # Find which one has been triggered
-    ctx = dash.callback_context
-
-    if ctx.triggered:
-        prop_id = ctx.triggered[0]["prop_id"].split(".")[0]
-        if prop_id == "reset-btn":
-            reset = True
-
-    # Return to original hm(no colored annotation) by resetting
-    return generate_patient_volume_heatmap(
-        start, end, clinic, hm_click, admit_type, reset
-    )
-
-
-app.clientside_callback(
-    ClientsideFunction(namespace="clientside", function_name="resize"),
-    Output("output-clientside", "children"),
-    [Input("wait_time_table", "children")] + wait_time_inputs + score_inputs,
-)
-
-
-@app.callback(
-    Output("wait_time_table", "children"),
-    [
-        Input("date-picker-select", "start_date"),
-        Input("date-picker-select", "end_date"),
-        Input("clinic-select", "value"),
-        Input("admit-select", "value"),
-        Input("patient_volume_hm", "clickData"),
-        Input("reset-btn", "n_clicks"),
-    ]
-    + wait_time_inputs
-    + score_inputs,
-)
-def update_table(start, end, clinic, admit_type, heatmap_click, reset_click, *args):
-    start = start + " 00:00:00"
-    end = end + " 00:00:00"
-
-    # Find which one has been triggered
-    ctx = dash.callback_context
-
-    prop_id = ""
-    prop_type = ""
-    triggered_value = None
-    if ctx.triggered:
-        prop_id = ctx.triggered[0]["prop_id"].split(".")[0]
-        prop_type = ctx.triggered[0]["prop_id"].split(".")[1]
-        triggered_value = ctx.triggered[0]["value"]
-
-    # filter data
-    filtered_df = df[
-        (df["Clinic Name"] == clinic) & (df["Admit Source"].isin(admit_type))
-    ]
-    filtered_df = filtered_df.sort_values("Check-In Time").set_index("Check-In Time")[
-        start:end
-    ]
-    departments = filtered_df["Department"].unique()
-
-    # Highlight click data's patients in this table
-    if heatmap_click is not None and prop_id != "reset-btn":
-        hour_of_day = heatmap_click["points"][0]["x"]
-        weekday = heatmap_click["points"][0]["y"]
-        clicked_df = filtered_df[
-            (filtered_df["Days of Wk"] == weekday)
-            & (filtered_df["Check-In Hour"] == hour_of_day)
-        ]  # slice based on clicked weekday and hour
-        departments = clicked_df["Department"].unique()
-        filtered_df = clicked_df
-
-    # range_x for all plots
-    wait_time_xrange = [
-        filtered_df["Wait Time Min"].min() - 2,
-        filtered_df["Wait Time Min"].max() + 2,
-    ]
-    score_xrange = [
-        filtered_df["Care Score"].min() - 0.5,
-        filtered_df["Care Score"].max() + 0.5,
-    ]
-
-    figure_list = []
-
-    if prop_type != "selectedData" or (
-        prop_type == "selectedData" and triggered_value is None
-    ):  # Default condition, all ""
-
-        for department in departments:
-            department_wait_time_figure = create_table_figure(
-                department, filtered_df, "Wait Time Min", wait_time_xrange, ""
-            )
-            figure_list.append(department_wait_time_figure)
-
-        for department in departments:
-            department_score_figure = create_table_figure(
-                department, filtered_df, "Care Score", score_xrange, ""
-            )
-            figure_list.append(department_score_figure)
-
-    elif prop_type == "selectedData":
-        selected_patient = ctx.triggered[0]["value"]["points"][0]["customdata"]
-        selected_index = [ctx.triggered[0]["value"]["points"][0]["pointIndex"]]
-
-        # [] turn on un-selection for all other plots, [index] for this department
-        for department in departments:
-            wait_selected_index = []
-            if prop_id.split("_")[0] == department:
-                wait_selected_index = selected_index
-
-            department_wait_time_figure = create_table_figure(
-                department,
-                filtered_df,
-                "Wait Time Min",
-                wait_time_xrange,
-                wait_selected_index,
-            )
-            figure_list.append(department_wait_time_figure)
-
-        for department in departments:
-            score_selected_index = []
-            if department == prop_id.split("_")[0]:
-                score_selected_index = selected_index
-
-            department_score_figure = create_table_figure(
-                department,
-                filtered_df,
-                "Care Score",
-                score_xrange,
-                score_selected_index,
-            )
-            figure_list.append(department_score_figure)
-
-    # Put figures in table
-    table = generate_patient_table(
-        figure_list, departments, wait_time_xrange, score_xrange
-    )
-    return table
-
+    samples = generate_table(samples)
+    if len(sample_store) > 500:
+        virtualization = True
+    else:
+        virtualization = False
+    return [len(sample_store), samples.to_dict("rows"), virtualization]
 
 # Run the server
 if __name__ == "__main__":
