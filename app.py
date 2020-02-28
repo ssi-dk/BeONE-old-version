@@ -2,7 +2,7 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_bootstrap_components as dbc
-from dash.dependencies import Input, Output, ClientsideFunction
+from dash.dependencies import Input, Output, State
 from components import html_components as hc
 from components import mongo_interface as mongo_interface
 from flask_caching import Cache
@@ -87,6 +87,7 @@ app.layout = html.Div(
     id="app-container",
     children=[
         dcc.Store(id="sample-store", data=[], storage_type='session'),
+        dcc.Store(id="param-store", data={}),
         html.Div([
             html.Div(id='content', children=[
                 hc.html_topbar(),
@@ -115,20 +116,70 @@ app.layout = html.Div(
 @app.callback(
     [Output('run-list', 'options'),
      Output('species-list', 'options')],
-    [Input('run-list', 'value')])
+    [Input('run-list', 'value')]
+)
 def update_dropdowns(selected_run):
     return hc.dropdowns_options(selected_run)
 
-# @app.callback(
-#     [Output('DBtable_samples', 'data')],
-#     [Input('run-list', 'value')]
-# )
-# def update_samples():
-#
-#     df = import_data.filter_all(run_names=['stefano_playground'])
-#     df = df['name']
-#     data = [{'label': j, 'values': j} for j in df]
-#     return data
+
+@app.callback(
+    Output("sample-store", "data"),
+    [Input("apply-filter-button", "n_clicks"),
+     Input("param-store", "data"),
+     Input("selected-collection", "data")],
+    [State("run-list", "value"),
+     State("species-list", "value"),
+     State("form-species-source", "value"),
+     State("group-list", "value"),
+     State("qc-list", "value"),
+     State("samples-form", "value"),
+     State("sample-store", "data"),
+     ]
+)
+def update_selected_samples(n_clicks, param_store, collection_name,
+                            run_names, species_list,
+                            species_source, group_list, qc_list,
+                            sample_names, prev_sample_store):
+    print('update_selected_samples')
+    if sample_names is not None and sample_names != "":
+        sample_names = sample_names.split("\n")
+    else:
+        sample_names = param_store.get("sample_names", [])
+    if not run_names:
+        run_names = param_store.get("run", [])
+    if not group_list:
+        group_list = param_store.get("group", [])
+    if not species_list:
+        species_list = param_store.get("species", [])
+    if not qc_list:
+        qc_list = param_store.get("qc", [])
+
+    # override if selected collection
+    if collection_name is not None:
+        run_names = [collection_name]
+
+    if (n_clicks == 0 and
+            sample_names == [] and
+            run_names == [] and
+            group_list == [] and
+            species_list == [] and
+            qc_list == []):
+        samples = prev_sample_store
+    else:
+
+        samples = import_data.filter_all(
+            species=species_list, species_source=species_source,
+            group=group_list, qc_list=qc_list,
+            run_names=run_names,
+            sample_names=sample_names,
+            projection={"name": 1})
+
+        if "_id" in samples:
+            samples["_id"] = samples["_id"].astype(str)
+        samples = samples.to_dict('records')
+    # if deleted_samples:
+    #     samples = [s for s in samples if s["_id"] not in deleted_samples]
+    return samples
 
 @app.callback(
     [Output('tab-content', 'children')],

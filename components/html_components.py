@@ -82,7 +82,7 @@ def dropdowns_options(selected_run):
                 "label": item["_id"],
                 "value": item["_id"]
             })
-    print(species_options)
+   # print(species_options)
     return [run_options, species_options]
 
 def html_topbar():

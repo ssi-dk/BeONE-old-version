@@ -202,7 +202,7 @@ def get_samples_names(species_source, run_name=None):
         ]))
     return samples
 
-def get_samples_id(species_source, run_name='stefano_playground'):
+def get_samples_id(species_source, run_name):
     connection = get_connection()
     db = connection.get_database()
     if species_source == "provided":
