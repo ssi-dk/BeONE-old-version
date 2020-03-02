@@ -63,9 +63,9 @@ def get_db_list():
     print(db_options)
     return db_options
 
-def get_run_list():
+def get_run_list(DB):
     connection = get_connection()
-    db = connection.get_database()
+    db = connection[DB]
     # Fastest.
     runs = list(db.runs.find({},  # {"type": "routine"}, #Leave in routine
                              {"name": 1,
@@ -164,47 +164,9 @@ def get_species_list(species_source, run_name=None):
         ]))
     return species
 
-def get_samples_names(species_source, run_name=None):
+def get_samples_id(species_source, run_name, DB):
     connection = get_connection()
-    db = connection.get_database()
-    if species_source == "provided":
-        spe_field = "properties.sample_info.summary.provided_species"
-    else:
-        spe_field = "properties.species_detection.summary.detected_species"
-    if run_name is not None:
-        run = db.runs.find_one(
-            {"name": run_name},
-            {
-                "_id": 0,
-                "samples._id": 1
-            }
-        )
-        if run is None:
-            run_samples = []
-        else:
-            run_samples = run["samples"]
-        sample_ids = [s["_id"] for s in run_samples]
-        samples = list(db.samples.aggregate([
-            {
-                "$match": {
-                    "_id": {"$in": sample_ids}
-                }
-            },
-            {
-                "$sort": {"_id": 1}
-            }
-        ]))
-    else:
-        samples = list(db.samples.aggregate([
-            {
-                "$sort": {"_id": 1}
-            }
-        ]))
-    return samples
-
-def get_samples_id(species_source, run_name):
-    connection = get_connection()
-    db = connection.get_database()
+    db = connection[DB]
     if species_source == "provided":
         spe_field = "properties.sample_info.summary.provided_species"
     else:

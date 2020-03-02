@@ -56,9 +56,9 @@ def dropdown_db_options():
     # ]
     return db_list
 
-def dropdowns_options(selected_run):
+def dropdowns_options(DB, selected_run):
     print("dropdown_species_options")
-    run_list = import_data.get_run_list()
+    run_list = import_data.get_run_list(DB)
     run_options = [
         {
             "label": "{}".format(run["name"]),
@@ -205,43 +205,44 @@ def html_div_filter():
         )
     ])
 
-def html_tab_bifrost():
+def html_tab_bifrost(data,column_names):
     view = html.Div([
             html.Div([
-                html.H5("Select run",
+                html.H5("Select runs",
                         className="m-0 font-weight-bold text-primary"),
                 dcc.Dropdown(
                     id="run-list",
                     #options=dropdowns_options()[0],
                     value=None
-                ),
+                )
             ], className='pretty_container four columns', style={'border':'1px DarkGrey solid',
                                                                  'padding-bottom':'5px',
                                                                  'padding-left':'5px',
                                                                  'position':'relative',
                                                                  'zIndex':999}),
-            table_main(),
+        html.Div([
+            html.H5("Species in selected runs",
+                    className="m-0 font-weight-bold text-primary"),
+            dcc.Dropdown(
+                id="species-list",
+                # options=[],
+                value=None
+            ),
+        ], className='pretty_container four columns', style={'border': '1px DarkGrey solid',
+                                                             'padding-bottom': '5px',
+                                                             'padding-left': '5px',
+                                                             'position': 'relative',
+                                                             'zIndex': 999}),
+            table_main(data,column_names),
         ], className='pretty_container eleven columns', style={'border':'1px DarkGrey solid',
                                                                'padding-bottom':'5px',
                                                                'padding-left':'5px'})
     return [view]
 
-def html_tab_projects():
+def html_tab_projects(data,column_names):
     view = html.Div([
-            html.Div([
-                html.H5("Species in current run",
-                        className="m-0 font-weight-bold text-primary"),
-                dcc.Dropdown(
-                    id="species-list",
-                    #options=[],
-                    value=None
-                ),
-            ], className='pretty_container four columns', style={'border':'1px DarkGrey solid',
-                                                                 'padding-bottom':'5px',
-                                                                 'padding-left':'5px',
-                                                                 'position':'relative',
-                                                                 'zIndex':999}),
-        ], className='pretty_container eleven columns', style={'border':'1px DarkGrey solid',
+            table_main(data,column_names),
+        ], className='pretty_container four columns', style={'border':'1px DarkGrey solid',
                                                                'padding-bottom':'5px',
                                                                'padding-left':'5px'})
     return [view]
@@ -371,40 +372,44 @@ def generate_table(tests_df):
 
     return tests_df
 
-def table_main():
+def table_main(data,column_names):
     print("table_main")
+    print(data)
+    # if columns is None:
+    #     columns = global_vars.COLUMNS
 
     table = html.Div([
-        # html.Div([
-        #     dash_table.DataTable(
-        #         id='DBtable_runs',
-        #         columns=[{"name": i, "id": i} for i in df.columns],
-        #         data=df.to_dict('records'),
-        #         row_selectable='multi',
-        #         style_cell={'textAlign': 'left'},
-        #         style_as_list_view=False,
-        #         filter_action='native',
-        #
-        #         style_header={
-        #             'backgroundColor': 'rgb(230, 230, 230)',
-        #             'fontWeight': 'bold',
-        #             'fontSize': '7',
-        #             'textAlign': 'center',
-        #         },
-        #         # style_table={'overflowX': 'scroll','overflowY': 'scroll'}
-        #     )
-        #
-        # ], className="card-body", style={'width': '49%', 'display':'inline-block'}),
+
         html.Div([
+            html.Div([
+                html.Div([
+                    dbc.Button("Select all",
+                               id='select-all-button',
+                               n_clicks=0,
+                               size='sm')
+                ])
+            ], className='col-auto mr-auto', style={'display': 'inline-block',
+                                                    'padding-bottom': '5px'}),
+            html.Div([
+                html.Div([
+                    dbc.Button("Upload",
+                               id='Upload-samples',
+                               n_clicks=0,
+                               size='sm')
+                ]),
+            ], className='col-auto mr-auto', style={'display': 'inline-block',
+                                                    'padding-bottom': '5px',
+                                                    'padding-left': '5px'}),
             html.Div([], id="placeholder0"),
             dash_table.DataTable(
-                data=[{}],
+                data=data,
                 row_selectable='multi',
                 filter_action='native',
                 style_table={
                     'overflowX': 'scroll',
                 },
-                columns=global_vars.COLUMNS,
+                columns=column_names,
+                #columns=[],
                 style_cell={
                     'minWidth': '180px',
                     'textAlign': 'center',

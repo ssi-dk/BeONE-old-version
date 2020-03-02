@@ -20,7 +20,7 @@ def get_connection(KEY):
     CONNECTION = pymongo.MongoClient(mongo_db_key)
     return CONNECTION
 
-DB = "bifrost_prod"
+DB = "bifrost_upgrade_test"
 
 connection = get_connection(KEY)
 #collection_names = connection[DB].list_collection_names()
@@ -43,20 +43,22 @@ run_options = [
 
 df2 = pd.DataFrame(run_options)
 
-sample_ids = mongo_interface.get_samples_id("not defined")
+#sample_ids = mongo_interface.get_samples_id("not defined")
 
-df = pd.DataFrame(sample_ids)
-print(df)
+#df = pd.DataFrame(sample_ids)
+#print(df)
+sample_name = ["CPO20180130","DK_SSI_5080"]
+run_name = ['stefano_playground']
 
-samples = import_data.filter_all(
-    sample_ids=sample_ids)
-
+samples = import_data.filter_all(run_names=run_name, sample_names=sample_name)
 test = pd.DataFrame(samples)
+print(test[['_id', 'name']])
 
-for col in test.columns:
-    print(col)
 
-#print(test['properties.mlst.summary.strain'])
+#for col in test.columns:
+#    print(col)
+
+#print(test['properties.detected_species'])
 #print(test.loc[test['properties.species_detection.summary.detected_species'] == 'Escherichia coli'][["_id", 'properties.mlst.summary.strain', 'name']])
 
 #print(df)

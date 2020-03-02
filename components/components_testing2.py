@@ -207,12 +207,12 @@ samples = pd.DataFrame(samples)
 #test = pd.DataFrame(run_name)
 #print(run)
 
-COLUMNS = ["_id", 'name', 'properties.detected_species', 'sample_sheet.run_name']
+COLUMNS = ['name', 'sample_sheet.run_name']
 
-table = samples.loc[samples['properties.detected_species'] == 'Escherichia coli'][COLUMNS]
+table = samples.loc[samples['properties.detected_species'] == 'Yersinia enterocolitica'][COLUMNS]
 #print(table)
 #print(table['_id'][0])
-sample_ids_subset =  samples.loc[samples['properties.detected_species'] == 'Escherichia coli']['_id']
+sample_ids_subset =  samples.loc[samples['properties.detected_species'] == 'Yersinia enterocolitica']['_id']
 #print(sample_ids_subset)
 
 components = get_mlst(sample_ids_subset)
@@ -224,4 +224,4 @@ for n in range(len(components)):
 
 table['ST'] = values
 
-table.to_csv(r'/Users/stefanocardinale/Documents/SSI/PROJECTS/e.coli.csv', index= False)
+table.to_csv(r'/Users/stefanocardinale/Documents/SSI/PROJECTS/yersinia_200226.csv', index= False)
