@@ -63,9 +63,9 @@ def get_db_list():
     print(db_options)
     return db_options
 
-def get_run_list(DB):
+def get_run_list(datab):
     connection = get_connection()
-    db = connection[DB]
+    db = connection[datab]
     # Fastest.
     runs = list(db.runs.find({},  # {"type": "routine"}, #Leave in routine
                              {"name": 1,
@@ -164,26 +164,22 @@ def get_species_list(species_source, run_name=None):
         ]))
     return species
 
-def get_samples_id(species_source, run_name, DB):
+def get_samples_id(run_name, datab):
     connection = get_connection()
-    db = connection[DB]
-    if species_source == "provided":
-        spe_field = "properties.sample_info.summary.provided_species"
-    else:
-        spe_field = "properties.species_detection.summary.detected_species"
+    db = connection[datab]
 
-        run = db.runs.find_one(
-            {"name": run_name},
-            {
-                "_id": 0,
-                "samples._id": 1
-            }
-        )
-        if run is None:
-            run_samples = []
-        else:
-            run_samples = run["samples"]
-        sample_ids = [s["_id"] for s in run_samples]
+    run = db.runs.find_one(
+        {"name": run_name},
+        {
+            "_id": 0,
+            "samples._id": 1
+        }
+    )
+    if run is None:
+        run_samples = []
+    else:
+        run_samples = run["samples"]
+    sample_ids = [s["_id"] for s in run_samples]
 
 
     return sample_ids

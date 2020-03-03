@@ -46,7 +46,7 @@ def html_div_main():
     ], className='row', style={'padding-top': '10px'})
 
 def dropdown_db_options():
-    print(dropdown_db_options)
+    print('dropdown_db_options')
     db_list = import_data.get_db_list()
     # db_options = [
     #     {
@@ -56,9 +56,20 @@ def dropdown_db_options():
     # ]
     return db_list
 
-def dropdowns_options(DB, selected_run):
-    print("dropdown_species_options")
-    run_list = import_data.get_run_list(DB)
+def dropdown_run_options(datab):
+    print('dropdown_run_options')
+    run_list = import_data.get_run_list(datab)
+    run_options = [
+        {
+            "label": "{}".format(run["name"]),
+            "value": run["name"]
+        } for run in run_list]
+
+    return [run_options]
+
+def dropdowns_options(datab, selected_run):
+    print("dropdowns_options")
+    run_list = import_data.get_run_list(datab)
     run_options = [
         {
             "label": "{}".format(run["name"]),
@@ -83,7 +94,7 @@ def dropdowns_options(DB, selected_run):
                 "value": item["_id"]
             })
    # print(species_options)
-    return [run_options, species_options]
+    return [run_options]
 
 def html_topbar():
     return html.Div([
@@ -119,8 +130,33 @@ def html_topbar():
             ], className='six columns', style={'display':'inline-block', 'padding-left':'5px'}),
         ], className='pretty_container five columns', style={"border":"1px DarkGrey solid", 'padding-bottom':'5px', 'padding-left':'5px'}),
         html.Div([
-            html.H5("News")
-        ], className='pretty_container five columns', style={"border":"1px DarkGrey solid", 'padding-bottom':'5px', 'padding-left':'5px', 'height':'120px', 'text-align':'center'})
+            html.Div([
+                html.H5("Select runs",
+                        className="m-0 font-weight-bold text-primary"),
+                dcc.Dropdown(
+                    id="run-list",
+                    # options=dropdowns_options()[0],
+                    value=None
+                )
+            ], className='pretty_container six columns', style={'border': '1px DarkGrey solid',
+                                                                 'padding-bottom': '5px',
+                                                                 'padding-left': '5px',
+                                                                 'position': 'relative',
+                                                                 'zIndex': 999}),
+            html.Div([
+                html.H5("Species in selected runs",
+                        className="m-0 font-weight-bold text-primary"),
+                dcc.Dropdown(
+                    id="species-list",
+                    # options=[],
+                    value=None
+                ),
+            ], className='pretty_container five columns', style={'border': '1px DarkGrey solid',
+                                                                 'padding-bottom': '5px',
+                                                                 'padding-left': '5px',
+                                                                 'position': 'relative',
+                                                                 'zIndex': 999}),
+        ], className='pretty_container six columns', style={"border":"1px DarkGrey solid", 'padding-bottom':'5px', 'padding-left':'5px', 'height':'120px', 'text-align':'center'})
     ], className='row', style={'padding-top':'5px', 'padding-bottom':'10px'})
 
 def html_div_filter():
@@ -205,35 +241,9 @@ def html_div_filter():
         )
     ])
 
-def html_tab_bifrost(data,column_names):
+def html_tab_bifrost(data, column_names):
     view = html.Div([
-            html.Div([
-                html.H5("Select runs",
-                        className="m-0 font-weight-bold text-primary"),
-                dcc.Dropdown(
-                    id="run-list",
-                    #options=dropdowns_options()[0],
-                    value=None
-                )
-            ], className='pretty_container four columns', style={'border':'1px DarkGrey solid',
-                                                                 'padding-bottom':'5px',
-                                                                 'padding-left':'5px',
-                                                                 'position':'relative',
-                                                                 'zIndex':999}),
-        html.Div([
-            html.H5("Species in selected runs",
-                    className="m-0 font-weight-bold text-primary"),
-            dcc.Dropdown(
-                id="species-list",
-                # options=[],
-                value=None
-            ),
-        ], className='pretty_container four columns', style={'border': '1px DarkGrey solid',
-                                                             'padding-bottom': '5px',
-                                                             'padding-left': '5px',
-                                                             'position': 'relative',
-                                                             'zIndex': 999}),
-            table_main(data,column_names),
+            table_main(data, column_names),
         ], className='pretty_container eleven columns', style={'border':'1px DarkGrey solid',
                                                                'padding-bottom':'5px',
                                                                'padding-left':'5px'})
@@ -374,7 +384,7 @@ def generate_table(tests_df):
 
 def table_main(data,column_names):
     print("table_main")
-    print(data)
+    #print(data)
     # if columns is None:
     #     columns = global_vars.COLUMNS
 
@@ -393,7 +403,7 @@ def table_main(data,column_names):
             html.Div([
                 html.Div([
                     dbc.Button("Upload",
-                               id='Upload-samples',
+                               id='upload-samples',
                                n_clicks=0,
                                size='sm')
                 ]),
