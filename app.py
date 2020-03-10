@@ -51,8 +51,10 @@ app.layout = html.Div(
     id="app-container",
     children=[
         dcc.Store(id="sample-store", data=[], storage_type='session'),
+        dcc.Store(id="project-store", data=[], storage_type='session'),
         dcc.Store(id="param-store", data={}),
-        dcc.Store(id="selected-collection", data=None),
+        dcc.Store(id="selected-run", data=None),
+        dcc.Store(id="selected-species", data=None),
         html.Div([
             html.Div(id='content', children=[
                 hc.html_topbar(),
@@ -81,13 +83,15 @@ app.layout = html.Div(
 @app.callback(
     [Output('datatable-ssi_stamper', "selected_rows")],
     [Input('select-all-button', 'n_clicks')],
-    [State('datatable-ssi_stamper', "derived_virtual_data")]
+    [State('datatable-ssi_stamper', "data")]
 )
-def select_all(n_clicks, selected_rows):
-    if selected_rows is None:
+def select_all(n_clicks, data):
+
+    if n_clicks == 0:
         return [[]]
     else:
-        return [[i for i in range(len(selected_rows))]]
+        return [[i for i in range(len(data))]]
+
 
 @app.callback(
     [Output('run-list', 'options')],
@@ -96,121 +100,113 @@ def select_all(n_clicks, selected_rows):
 def update_runs_dropdown(datab):
     print("update_runs_dropdown")
     if datab is None:
-        datab = 'bifrost_upgrade_test'
-    return hc.dropdown_run_options(datab)
+        datab = 'bifrost_prod'
+
+    run_options = hc.dropdown_run_options(datab)[0]
+    print(run_options)
+
+    return [run_options]
 
 
 @app.callback(
-    [Output('sample-store', 'data'),
-     Output('selected-collection', 'data')],
-    [Input('upload-samples', 'n_clicks'),
+    [Output('selected-run', 'data'),
+     Output('selected-species', 'data'),
+     Output('sample-store', 'data'),
+     Output('species-list', 'options')],
+    [Input('run-selector', 'n_clicks'),
+     Input('specie-selector', 'n_clicks'),
      Input('run-list', 'value'),
-     Input('datatable-ssi_stamper', 'derived_virtual_data'),
-     Input('datatable-ssi_stamper', 'derived_virtual_selected_rows'),
-     Input('datatable-ssi_stamper', 'active_cell')]
+     Input('species-list', 'value')]
 )
-def update_selected_samples(n_clicks, selected_run, rows, selected_rows, active_cell):
+def upload_runs(n_clicks, n_clicks2, selected_run, selected_specie):
+    if n_clicks == 0 and n_clicks2 == 0:
+        species_options = mongo_interface.get_species_list()
+
+        print(selected_run)
+        print(species_options)
+        return ['', [], [], species_options]
+
+    elif n_clicks == 0 and n_clicks2 != 0:
+        species_options = mongo_interface.get_species_list()
+        samples = import_data.filter_all(species=[selected_specie])
+        samples = hc.generate_table(samples)
+        print(samples)
+        samples = samples.to_dict("rows")
+
+        selected_specie = ["{}".format(selected_specie)]
+        print(selected_run)
+        print(selected_specie)
+        print(species_options)
+        return ['', selected_specie, samples, species_options]
+
+    elif n_clicks != 0 and n_clicks2 == 0:
+        species_options = mongo_interface.get_species_list(selected_run)
+        samples = import_data.filter_all(run_names=selected_run)
+        samples = hc.generate_table(samples)
+
+        samples = samples.to_dict("rows")
+        print(selected_run)
+        print(selected_specie)
+        print(samples)
+        print(species_options)
+        return [selected_run, [], samples, species_options]
+
+    elif n_clicks != 0 and n_clicks2 != 0:
+        species_options = mongo_interface.get_species_list(selected_run)
+        samples = import_data.filter_all(species=[selected_specie], run_names=selected_run)
+        samples = hc.generate_table(samples)
+
+        samples = samples.to_dict("rows")
+
+        selected_specie = ["{}".format(selected_specie)]
+        print(selected_run)
+        print("selected specie is: {}".format(selected_specie))
+        print(samples)
+        print(species_options)
+        return [selected_run, selected_specie, samples, species_options]
+
+
+@app.callback(
+    [Output('project-store', 'data')],
+    [Input('upload-samples', 'n_clicks'),
+     Input('datatable-ssi_stamper', 'derived_virtual_data'),
+     Input('datatable-ssi_stamper', 'derived_virtual_selected_rows')]
+)
+def update_selected_samples(n_clicks, rows, selected_rows):
     print("update_selected_samples")
     #print(prev_sample_store)
-    if selected_run is None:
-        selected_run = 'stefano_playground'
+    # if selected_run is None:
+    #     selected_run = 'stefano_playground'
 
     if n_clicks == 0:
         raise PreventUpdate
 
     else:
-        #sample_ids = mongo_interface.get_samples_id(run_name, datab)
-        #samples = import_data.filter_all(run_names=[selected_run], projection={"_id": 1})
-        #if "_id" in samples:
-        #    samples["_id"] = samples["_id"].astype(str)
-        #samples = samples.to_dict('records')
-
         data = pd.DataFrame(rows)
         data = data.take(selected_rows)
         samples = data.to_dict('rows')
 
-    #print(len(samples))
-    print(data.take(selected_rows))
+    print("the number of selected samples is: {}".format(len(samples)))
     #print("selected rows are {}").format(selected_rows)
-    return [samples, selected_run]
+    return [samples]
 
-# @app.callback(
-#     Output("sample-store", "data"),
-#     [Input("upload-samples", "n_clicks"),
-#      Input("param-store", "data"),
-#      Input("selected-collection", "data")],
-#     [State("run-list", "value"),
-#      State("species-list", "value"),
-#      State("form-species-source", "value"),
-#      State("samples-form", "value"),
-#      State("sample-store", "data"),
-#      ]
-# )
-# def update_selected_samples(n_clicks, param_store, collection_name,
-#                             run_names, species_list,
-#                             species_source,
-#                             sample_names, prev_sample_store):
-#     print('update_selected_samples')
-#     if sample_names is not None and sample_names != "":
-#         sample_names = sample_names.split("\n")
-#     else:
-#         sample_names = param_store.get("sample_names", [])
-#     if not run_names:
-#         run_names = param_store.get("run", [])
-#     if not species_list:
-#         species_list = param_store.get("species", [])
-#
-#     # override if selected collection
-#     if collection_name is not None:
-#         run_names = [collection_name]
-#
-#     if (n_clicks == 0 and
-#             sample_names == [] and
-#             run_names == [] and
-#             species_list == []):
-#         samples = prev_sample_store
-#     else:
-#
-#         samples = import_data.filter_all(
-#             species=species_list, species_source=species_source,
-#             run_names=run_names,
-#             sample_names=sample_names,
-#             projection={"name": 1})
-#
-#         if "_id" in samples:
-#             samples["_id"] = samples["_id"].astype(str)
-#         samples = samples.to_dict('records')
-#     # if deleted_samples:
-#     #     samples = [s for s in samples if s["_id"] not in deleted_samples]
-#     print(samples)
-#     return samples
 
 @app.callback(
     [Output('tab-content', 'children')],
     [Input('control-tabs', 'value'),
+     Input('run-selector', 'n_clicks'),
+     Input('run-list', 'value'),
      Input('sample-store', 'data'),
-     Input('run-list', 'value')]
+     Input('project-store', 'data')]
 )
-def render_content(tab, data, selected_run):
+def render_content(tab, n_clicks, selected_run, selected_samples, project_samples):
     print('render_content')
-    print(data)
 
     if tab == 'projects-tab':
-        # sample_name = ["CPO20180130", "DK_SSI_5080"]
-        # run_name = ['stefano_playground']
-        datab = 'bifrost_upgrade_test'
-        print(selected_run)
 
-        sample_ids = mongo_interface.get_samples_id(selected_run, datab)
-        samples = import_data.filter_all(sample_ids=sample_ids, projection={"name": 1})
-        samples = hc.generate_table(samples)
-        samples = samples.to_dict("rows")
+        samples = project_samples
+        print("the number of project samples is {}".format(len(samples)))
         columns_names = global_vars.COLUMNS
-
-        # samples = import_data.filter_all(run_names=run_name, sample_names=sample_name)
-        # samples = hc.generate_table(samples)
-        # samples = samples[['name']]
-        # samples = samples.to_dict("rows")
 
         return hc.html_tab_projects(samples, columns_names)
 
@@ -221,64 +217,29 @@ def render_content(tab, data, selected_run):
         return hc.html_tab_reports()
 
     elif tab == 'bifrost-tab':
+        if n_clicks == 0 or selected_run == []:
+            if selected_samples is not None:
+                columns_names = global_vars.COLUMNS
+                samples = selected_samples
+            else:
+                samples = []
+                columns_names = global_vars.COLUMNS
+        else:
+            columns_names = global_vars.COLUMNS
+            samples = selected_samples
 
-        if selected_run is None:
-            selected_run = ['stefano_playground']
-
-        #selected_run = [selected_run]
-        datab = 'bifrost_upgrade_test'
-        print(selected_run)
-
-        sample_ids = mongo_interface.get_samples_id(selected_run, datab)
-        samples = import_data.filter_all(sample_ids=sample_ids)
-        samples = hc.generate_table(samples)
-        samples = samples.to_dict("rows")
-        #columns = ['name','properties.species_detection.summary.detected_species']
-        columns_names = global_vars.COLUMNS
         print(samples)
+        return hc.html_tab_bifrost(samples, columns_names)
 
-    return hc.html_tab_bifrost(samples, columns_names)
-
-# @app.callback(
-#     [
-#         #        Output("filter-sample-count", "children"),
-#         Output("datatable-ssi_stamper", "data"),
-#         #        Output("datatable-ssi_stamper", "virtualization")
-#     ],
-#     [
-#         Input("placeholder0", "children"),
-#         Input('run-list', 'value'),
-#         Input('db-list', 'value'),
-#         Input('control-tabs', 'value')
-#         #Input("sample-store", "data")
-#     ],
-# )
-# def update_filter_table(ignore, selected_run, DB, tab):
-#     print('update_filter_table')
-#     if tab == 'bifrost-tab':
-#         if selected_run is None:
-#             selected_run = 'stefano_playground'
-#         if DB is None:
-#             DB = 'bifrost_upgrade_test'
-#
-#         sample_ids = mongo_interface.get_samples_id('not defined', selected_run, DB)
-#         samples = import_data.filter_all(sample_ids=sample_ids)
-#
-#         samples = hc.generate_table(samples)
-#         #print(samples)
-#
-#     elif tab == 'projects-tab':
-#         sample_name = ["CPO20180130", "DK_SSI_5080"]
-#         run_name = ['stefano_playground']
-#
-#         samples = import_data.filter_all(run_names=run_name, sample_names=sample_name)
-#         samples = hc.generate_table(samples)
-#
-#         #test = pd.DataFrame(samples)
-#         #print(samples)
-#
-#     print(samples)
-#     return [samples.to_dict("rows")]
+@app.callback(
+    [Output('run-selector','n_clicks'),
+     Output('run-list', 'value'),
+     Output('specie-selector', 'n_clicks'),
+     Output('species-list', 'value')],
+    [Input('reset-button', 'n_clicks')]
+)
+def update(reset):
+    return [0, '', 0, '']
 
 # Run the server
 if __name__ == "__main__":

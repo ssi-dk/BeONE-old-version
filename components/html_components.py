@@ -67,19 +67,9 @@ def dropdown_run_options(datab):
 
     return [run_options]
 
-def dropdowns_options(datab, selected_run):
-    print("dropdowns_options")
-    run_list = import_data.get_run_list(datab)
-    run_options = [
-        {
-            "label": "{}".format(run["name"]),
-            "value": run["name"]
-        } for run in run_list]
-
-    if selected_run is None:
-        selected_run = 'stefano_playground'
-
-    species_list = import_data.get_species_list("not provided", selected_run)
+def dropdown_species_options(selected_run):
+    print("dropdown_species_options")
+    species_list = import_data.get_species_list(selected_run)
 
     species_options = []
     for item in species_list:
@@ -93,8 +83,8 @@ def dropdowns_options(datab, selected_run):
                 "label": item["_id"],
                 "value": item["_id"]
             })
-   # print(species_options)
-    return [run_options]
+
+    return species_options
 
 def html_topbar():
     return html.Div([
@@ -128,33 +118,57 @@ def html_topbar():
                     initial_visible_month=dt(2014, 1, 1),
                 )
             ], className='six columns', style={'display':'inline-block', 'padding-left':'5px'}),
+
         ], className='pretty_container five columns', style={"border":"1px DarkGrey solid", 'padding-bottom':'5px', 'padding-left':'5px'}),
         html.Div([
             html.Div([
-                html.H5("Select runs",
-                        className="m-0 font-weight-bold text-primary"),
+                html.H6("Select Bifrost runs",
+                        className="m-0 text-primary"),
                 dcc.Dropdown(
                     id="run-list",
                     # options=dropdowns_options()[0],
-                    value=None
+                    value=None,
+                    multi=True,
                 )
-            ], className='pretty_container six columns', style={'border': '1px DarkGrey solid',
-                                                                 'padding-bottom': '5px',
-                                                                 'padding-left': '5px',
-                                                                 'position': 'relative',
+            ], className='pretty_container seven columns', style={'border': '1px DarkGrey solid',
                                                                  'zIndex': 999}),
             html.Div([
-                html.H5("Species in selected runs",
-                        className="m-0 font-weight-bold text-primary"),
+                    dbc.Button("Upload run",
+                               id='run-selector',
+                               n_clicks=0,
+                               size='sm'),
+            ], className='three columns', style={'display': 'inline-block',
+                                               'padding-bottom': '2px',
+                                               'padding-left': '2px'}),
+            html.Div([
+                html.Div([
+                    dbc.Button("Reset",
+                               id='reset-button',
+                               n_clicks=0,
+                               size='sm')
+                ]),
+            ], className='two columns', style={'display': 'inline-block',
+                                                 'padding-bottom': '2px',
+                                                 'padding-left': '2px'}),
+            html.Div([
+                html.Div([
+                    dbc.Button("Upload a specie",
+                               id='specie-selector',
+                               n_clicks=0,
+                               size='sm')
+                ]),
+            ], className='three columns', style={'display': 'inline-block',
+                                               'padding-bottom': '2px',
+                                               'padding-left': '2px'}),
+            html.Div([
+                html.H6("Species",
+                        className="m-0 text-primary"),
                 dcc.Dropdown(
                     id="species-list",
-                    # options=[],
+                    options=import_data.get_species_list(),
                     value=None
                 ),
-            ], className='pretty_container five columns', style={'border': '1px DarkGrey solid',
-                                                                 'padding-bottom': '5px',
-                                                                 'padding-left': '5px',
-                                                                 'position': 'relative',
+            ], className='pretty_container four columns', style={'display': 'inline-block', 'border': '1px DarkGrey solid',
                                                                  'zIndex': 999}),
         ], className='pretty_container six columns', style={"border":"1px DarkGrey solid", 'padding-bottom':'5px', 'padding-left':'5px', 'height':'120px', 'text-align':'center'})
     ], className='row', style={'padding-top':'5px', 'padding-bottom':'10px'})
@@ -243,18 +257,41 @@ def html_div_filter():
 
 def html_tab_bifrost(data, column_names):
     view = html.Div([
-            table_main(data, column_names),
-        ], className='pretty_container eleven columns', style={'border':'1px DarkGrey solid',
-                                                               'padding-bottom':'5px',
-                                                               'padding-left':'5px'})
+        html.Div([
+            html.Div([
+                dbc.Button("Select all",
+                           id='select-all-button',
+                           n_clicks=0,
+                           size='sm')
+            ])
+        ], className='col-auto mr-auto', style={'display': 'inline-block',
+                                                'padding-bottom': '5px'}),
+        html.Div([
+            html.Div([
+                dbc.Button("Upload",
+                           id='upload-samples',
+                           n_clicks=0,
+                           size='sm')
+            ]),
+        ], className='col-auto mr-auto', style={'display': 'inline-block',
+                                                'padding-bottom': '5px',
+                                                'padding-left': '5px'}),
+
+        #html.Div([], id="placeholder0"),
+        table_main(data, column_names),
+    ], className='pretty_container eleven columns', style={'border':'1px DarkGrey solid',
+                                                           'padding-bottom':'5px',
+                                                           'padding-left':'5px',
+                                                           'height': '1000px'})
     return [view]
 
 def html_tab_projects(data,column_names):
     view = html.Div([
             table_main(data,column_names),
-        ], className='pretty_container four columns', style={'border':'1px DarkGrey solid',
+        ], className='pretty_container eleven columns', style={'border':'1px DarkGrey solid',
                                                                'padding-bottom':'5px',
-                                                               'padding-left':'5px'})
+                                                               'padding-left':'5px',
+                                                               'height': '1000px'})
     return [view]
 
 def html_tab_results():
@@ -388,78 +425,47 @@ def table_main(data,column_names):
     # if columns is None:
     #     columns = global_vars.COLUMNS
 
-    table = html.Div([
-
-        html.Div([
-            html.Div([
-                html.Div([
-                    dbc.Button("Select all",
-                               id='select-all-button',
-                               n_clicks=0,
-                               size='sm')
-                ])
-            ], className='col-auto mr-auto', style={'display': 'inline-block',
-                                                    'padding-bottom': '5px'}),
-            html.Div([
-                html.Div([
-                    dbc.Button("Upload",
-                               id='upload-samples',
-                               n_clicks=0,
-                               size='sm')
-                ]),
-            ], className='col-auto mr-auto', style={'display': 'inline-block',
-                                                    'padding-bottom': '5px',
-                                                    'padding-left': '5px'}),
-            html.Div([], id="placeholder0"),
-            dash_table.DataTable(
-                data=data,
-                row_selectable='multi',
-                filter_action='native',
-                style_table={
-                    'overflowX': 'scroll',
-                },
-                columns=column_names,
-                #columns=[],
-                style_cell={
-                    'minWidth': '180px',
-                    'textAlign': 'center',
-                    "fontFamily": "Arial",
-                    'fontSize': '8',
-                },
-                style_header={
-                    'backgroundColor': 'rgb(230, 230, 230)',
-                    'fontWeight': 'bold',
-                    'fontSize': '7',
-                    'textAlign': 'center',
-                    'whiteSpace': 'normal'
-                },
-                style_cell_conditional=[
-                    {
-                        "if": {"column_id": "ssi_stamper_failed_tests"},
-                        "textAlign": "left"
-                    }
-                ],
-                fixed_rows={'headers': True},
-                # row_selectable='multi',
-                # filtering=True,  # Front end filtering
-                # sorting=True,
-                selected_rows=[],
-                # style_data_conditional=style_data_conditional,
-                # pagination_settings={
-                #     'current_page': 0,
-                #     'page_size': TABLE_PAGESIZE
-                # },
-                virtualization=False,
-                page_action='none',
-                id="datatable-ssi_stamper")
-        ], className="pretty-container", style={'width': '98%',
-                                                'display':'inline-block',
-                                                'padding-left':'10px'}),
-
-    ], className="row",
-        style={"max-height": '700px',
-               'overflowX': 'scroll',
-               'overflowY': 'scroll',
-               'width':'99%'}
-    )
+    table = dash_table.DataTable(
+            data=data,
+            row_selectable='multi',
+            filter_action='native',
+            style_table={
+                'maxHeight': '900px',
+                'overflowY': 'scroll',
+                'overflowX': 'scroll',
+            },
+            columns=column_names,
+            #columns=[],
+            style_cell={
+                'minWidth': '180px',
+                'textAlign': 'center',
+                "fontFamily": "Arial",
+                'fontSize': '8',
+            },
+            style_header={
+                'backgroundColor': 'rgb(230, 230, 230)',
+                'fontWeight': 'bold',
+                'fontSize': '7',
+                'textAlign': 'center',
+                'whiteSpace': 'normal'
+            },
+            style_cell_conditional=[
+                {
+                    "if": {"column_id": "ssi_stamper_failed_tests"},
+                    "textAlign": "left"
+                }
+            ],
+            #fixed_rows={'headers': True},
+            # row_selectable='multi',
+            # filtering=True,  # Front end filtering
+            # sorting=True,
+            selected_rows=[],
+            # style_data_conditional=style_data_conditional,
+            # pagination_settings={
+            #     'current_page': 0,
+            #     'page_size': TABLE_PAGESIZE
+            # },
+            virtualization=False,
+            page_action='none',
+            id="datatable-ssi_stamper")
     return table

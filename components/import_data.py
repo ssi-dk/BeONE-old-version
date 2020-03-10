@@ -14,8 +14,11 @@ def get_run_list(datab):
 def get_db_list():
     return mongo_interface.get_db_list()
 
-def get_species_list(species_source, run_name=None):
-    return mongo_interface.get_species_list(species_source, run_name)
+def get_species_list(run_name=None):
+    return mongo_interface.get_species_list(run_name)
+
+def get_filtered_samples(specie):
+    return mongo_interface.get_filtered_samples(specie)
 
 def filter_all(species=None, species_source=None, group=None,
                qc_list=None, run_names=None, sample_ids=None,
@@ -32,6 +35,7 @@ def filter_all(species=None, species_source=None, group=None,
             projection=projection)
     else:
         query_result = mongo_interface.filter(
+            datab,
             samples=sample_ids, pagination=pagination,
             projection=projection)
     return pd.io.json.json_normalize(query_result)

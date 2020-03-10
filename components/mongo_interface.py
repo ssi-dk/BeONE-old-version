@@ -114,25 +114,31 @@ def get_group_list(run_name=None):
 
     return groups
 
-def get_species_list(species_source, run_name=None):
+def get_species_list(run_name=None):
     connection = get_connection()
-    db = connection.get_database()
-    if species_source == "provided":
-        spe_field = "properties.sample_info.summary.provided_species"
-    else:
-        spe_field = "properties.species_detection.summary.detected_species"
+
+    db = connection['bifrost_prod']
+    # if species_source == "provided":
+    #     spe_field = "properties.sample_info.summary.provided_species"
+    # else:
+
+    spe_field = "properties.detected_species"
     if run_name is not None:
-        run = db.runs.find_one(
-            {"name": run_name},
+        run = list(db.runs.find(
+            {"name": {"$in": run_name}},
             {
                 "_id": 0,
                 "samples._id": 1
             }
-        )
+        ))
         if run is None:
             run_samples = []
         else:
-            run_samples = run["samples"]
+            run_samples = []
+            for n in range(len(run)):
+                for sample in run[n]['samples']:
+                    run_samples.append(sample)
+
         sample_ids = [s["_id"] for s in run_samples]
         species = list(db.samples.aggregate([
             {
@@ -162,7 +168,12 @@ def get_species_list(species_source, run_name=None):
                 "$sort": {"_id": 1}
             }
         ]))
-    return species
+
+    species_options = [
+        {"label": "{}".format(i['_id']),
+         "value": "{}".format(i['_id'])} for i in species]
+
+    return species_options
 
 def get_samples_id(run_name, datab):
     connection = get_connection()
@@ -183,6 +194,27 @@ def get_samples_id(run_name, datab):
 
 
     return sample_ids
+
+def get_filtered_samples(specie):
+    connection = get_connection()
+    db = connection['bifrost_prod']
+
+    # run = db.runs.find_one(
+    #     {"name": run_name},
+    #     {
+    #         "_id": 0,
+    #         "samples._id": 1
+    #     }
+    # )
+    # if run is None:
+    #     run_samples = []
+    # else:
+    #     run_samples = run["samples"]
+    # sample_ids = [s["_id"] for s in run_samples]
+
+    samples = list(db.samples.find({{"properties.detected_species": specie}}))
+
+    return samples
 
 def filter_qc(qc_list):
     if qc_list is None or len(qc_list) == 0:
@@ -210,13 +242,13 @@ def filter(run_names=None,
            sample_names=None,
            projection=None):
     if species_source == "provided":
-        spe_field = "properties.sample_info.summary.provided_species"
+        spe_field = "properties.provided_species"
     elif species_source == "detected":
-        spe_field = "properties.species_detection.summary.detected_species"
+        spe_field = "properties.detected_species"
     else:
-        spe_field = "properties.species_detection.summary.species"
+        spe_field = "properties.species"
     connection = get_connection()
-    db = connection.get_database()
+    db = connection['bifrost_prod']
     query = []
     sample_set = set()
     if sample_names is not None and len(sample_names) != 0:
@@ -277,7 +309,7 @@ def filter(run_names=None,
         p_limit = pagination['page_size']
         p_skip = pagination['page_size'] * pagination['current_page']
     else:
-        p_limit = 1000
+        p_limit = 10000
         p_skip = 0
 
     skip_limit_steps = [
