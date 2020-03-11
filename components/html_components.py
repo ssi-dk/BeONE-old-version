@@ -1,15 +1,15 @@
-import dash_html_components as html
-import components.import_data as import_data
-import components.mongo_interface as mongo_interface
-import dash_core_components as dcc
 from datetime import datetime as dt
-import components.global_vars as global_vars
 
-import pandas as pd
-import numpy as np
-import pymongo
-import dash_table
 import dash_bootstrap_components as dbc
+import dash_core_components as dcc
+import dash_html_components as html
+import dash_table
+import numpy as np
+import pandas as pd
+
+import components.global_vars as global_vars
+import components.import_data as import_data
+
 KEY = "BIFROST_DB_KEY"
 
 def html_div_main():
@@ -88,89 +88,87 @@ def dropdown_species_options(selected_run):
 
 def html_topbar():
     return html.Div([
+        html.Ul([
+            html.H5("Select Database"),
+            dcc.RadioItems(id="radiobuttons1",
+                           options=[
+                               {"label": "All ", "value": "all"},
+                               {"label": "Local ", "value": "active"},
+                               {"label": "Remote ", "value": "custom"},
+                           ],
+                           value="active",
+                           labelStyle={"display": "inline-block"},
+                           className="dcc_control",
+                           ),
+            dcc.Dropdown(
+                id="db-list",
+                options=dropdown_db_options(),
+                value=None
+            )
+        ], className='two columns', style={'display': 'inline-block'}),
+        html.Div([
+            html.H5("Select Time Range", style={'padding-bottom':'22px'}),
+            dcc.DatePickerRange(
+                id="date-picker-select",
+                start_date=dt(2014, 1, 1),
+                end_date=dt(2014, 1, 15),
+                min_date_allowed=dt(2014, 1, 1),
+                max_date_allowed=dt(2014, 12, 31),
+                initial_visible_month=dt(2014, 1, 1),
+            )
+        ], className='two columns', style={'padding-left':'5px'}),
+
         html.Div([
             html.Ul([
-                html.H5("Select Database"),
-                dcc.RadioItems(id="radiobuttons1",
-                               options=[
-                                   {"label": "All ", "value": "all"},
-                                   {"label": "Local ", "value": "active"},
-                                   {"label": "Remote ", "value": "custom"},
-                               ],
-                               value="active",
-                               labelStyle={"display": "inline-block"},
-                               className="dcc_control",
-                               ),
-                dcc.Dropdown(
-                    id="db-list",
-                    options=dropdown_db_options(),
-                    value=None
-                )
-            ], className='four columns', style={'display': 'inline-block'}),
-            html.Div([
-                html.H5("Select Time Range", style={'padding-bottom':'22px'}),
-                dcc.DatePickerRange(
-                    id="date-picker-select",
-                    start_date=dt(2014, 1, 1),
-                    end_date=dt(2014, 1, 15),
-                    min_date_allowed=dt(2014, 1, 1),
-                    max_date_allowed=dt(2014, 12, 31),
-                    initial_visible_month=dt(2014, 1, 1),
-                )
-            ], className='six columns', style={'display':'inline-block', 'padding-left':'5px'}),
+                html.Div([
+                    html.H6("Select Bifrost runs",
+                            className="m-0 text-primary"),
+                    dcc.Dropdown(
+                        id="run-list",
+                        # options=dropdowns_options()[0],
+                        value=None,
+                        multi=True,
+                    )
+                ], className='pretty_container five columns', style={'border': '1px DarkGrey solid',
+                                                                     'zIndex': 999}),
+                html.Div([
+                    html.H6("Species",
+                            className="m-0 text-primary"),
+                    dcc.Dropdown(
+                        id="species-list",
+                        options=import_data.get_species_list(),
+                        value=None
+                    ),
+                ], className='pretty_container three columns',
+                    style={'display': 'inline-block', 'border': '1px DarkGrey solid',
+                           'zIndex': 999}),
+                html.Div([
+                    html.Div([
+                        html.Div([
+                            dbc.Button("Upload run",
+                                       id='run-selector',
+                                       n_clicks=0,
+                                       size='sm'),
+                        ], className="two columns"),
+                        html.Div([
+                            dbc.Button("Upload a specie",
+                                       id='specie-selector',
+                                       n_clicks=0,
+                                       size='sm')
+                        ], className="two columns"),
+                    ], className="col"),
+                    html.Div([
+                        html.Div([
+                            dbc.Button("Reset",
+                                       id='reset-button',
+                                       n_clicks=0,
+                                       size='sm')
+                        ]),
+                    ], className='col', style={'display': 'inline-block', 'padding-top': '20px'}),
+                ], className='col'),
 
-        ], className='pretty_container five columns', style={"border":"1px DarkGrey solid", 'padding-bottom':'5px', 'padding-left':'5px'}),
-        html.Div([
-            html.Div([
-                html.H6("Select Bifrost runs",
-                        className="m-0 text-primary"),
-                dcc.Dropdown(
-                    id="run-list",
-                    # options=dropdowns_options()[0],
-                    value=None,
-                    multi=True,
-                )
-            ], className='pretty_container seven columns', style={'border': '1px DarkGrey solid',
-                                                                 'zIndex': 999}),
-            html.Div([
-                    dbc.Button("Upload run",
-                               id='run-selector',
-                               n_clicks=0,
-                               size='sm'),
-            ], className='three columns', style={'display': 'inline-block',
-                                               'padding-bottom': '2px',
-                                               'padding-left': '2px'}),
-            html.Div([
-                html.Div([
-                    dbc.Button("Reset",
-                               id='reset-button',
-                               n_clicks=0,
-                               size='sm')
-                ]),
-            ], className='two columns', style={'display': 'inline-block',
-                                                 'padding-bottom': '2px',
-                                                 'padding-left': '2px'}),
-            html.Div([
-                html.Div([
-                    dbc.Button("Upload a specie",
-                               id='specie-selector',
-                               n_clicks=0,
-                               size='sm')
-                ]),
-            ], className='three columns', style={'display': 'inline-block',
-                                               'padding-bottom': '2px',
-                                               'padding-left': '2px'}),
-            html.Div([
-                html.H6("Species",
-                        className="m-0 text-primary"),
-                dcc.Dropdown(
-                    id="species-list",
-                    options=import_data.get_species_list(),
-                    value=None
-                ),
-            ], className='pretty_container four columns', style={'display': 'inline-block', 'border': '1px DarkGrey solid',
-                                                                 'zIndex': 999}),
-        ], className='pretty_container six columns', style={"border":"1px DarkGrey solid", 'padding-bottom':'5px', 'padding-left':'5px', 'height':'120px', 'text-align':'center'})
+            ], className='col'),
+        ], className='pretty_container eight columns', style={"border":"1px DarkGrey solid", 'padding-bottom':'5px', 'padding-left':'5px', 'height':'120px', 'text-align':'center'})
     ], className='row', style={'padding-top':'5px', 'padding-bottom':'10px'})
 
 def html_div_filter():

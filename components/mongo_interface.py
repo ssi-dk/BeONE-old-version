@@ -175,22 +175,43 @@ def get_species_list(run_name=None):
 
     return species_options
 
-def get_samples_id(run_name, datab):
+def get_samples_id(run_name=None):
     connection = get_connection()
-    db = connection[datab]
+    db = connection['bifrost_prod']
 
-    run = db.runs.find_one(
-        {"name": run_name},
-        {
-            "_id": 0,
-            "samples._id": 1
-        }
-    )
-    if run is None:
-        run_samples = []
+    if run_name is not None:
+        run = list(db.runs.find(
+            {"name": {"$in": run_name}},
+            {
+                "_id": 0,
+                "samples._id": 1
+            }
+        ))
+        if run is None:
+            run_samples = []
+        else:
+            run_samples = []
+            for n in range(len(run)):
+                for sample in run[n]['samples']:
+                    run_samples.append(sample)
+
+        sample_ids = [s["_id"] for s in run_samples]
     else:
-        run_samples = run["samples"]
-    sample_ids = [s["_id"] for s in run_samples]
+        run = list(db.runs.find(
+            {
+                "_id": 0,
+                "samples._id": 1
+            }
+        ))
+        if run is None:
+            run_samples = []
+        else:
+            run_samples = []
+            for n in range(len(run)):
+                for sample in run[n]['samples']:
+                    run_samples.append(sample)
+
+        sample_ids = [s["_id"] for s in run_samples]
 
 
     return sample_ids
@@ -449,12 +470,11 @@ def get_last_runs(run, n, runtype):
         db.runs.find(query, {"name": 1, "samples": 1}).sort([['metadata.created_at', pymongo.DESCENDING]]).limit(n))
 
 
-def get_samples(sample_id_list, projection=None):
+def get_samples(sample_id_list):
     connection = get_connection()
-    db = connection.get_database()
-    if projection is None:
-        projection = {}
-    return list(db.samples.find({"_id": {"$in": sample_id_list}}, projection))
+    db = connection['bifrost_prod']
+
+    return list(db.samples.find({"_id": {"$in": sample_id_list}}))
 
 
 def get_sample(sample_id):
