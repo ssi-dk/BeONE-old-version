@@ -11,6 +11,9 @@ def get_connection():
 def get_run_list(datab):
     return mongo_interface.get_run_list(datab)
 
+def get_sample_component(sample_names, component_name):
+    return mongo_interface.get_sample_component(sample_names, component_name)
+
 def get_db_list():
     return mongo_interface.get_db_list()
 
@@ -19,6 +22,13 @@ def get_species_list(run_name=None):
 
 def get_filtered_samples(specie):
     return mongo_interface.get_filtered_samples(specie)
+
+def save_to_project(data_dict):
+    if len(data_dict) > 1:
+        for n in range(len(data_dict)):
+            mongo_interface.save_to_project(data_dict[n])
+    else:
+        mongo_interface.save_to_project(data_dict[0])
 
 def filter_all(species=None, species_source=None, group=None,
                qc_list=None, run_names=None, sample_ids=None,

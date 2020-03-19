@@ -17,12 +17,58 @@ from datetime import datetime as dt
 import pathlib
 import keys
 
-app = dash.Dash(
-    __name__,
-    meta_tags=[{"content": "width=device-width, initial-scale=1"}],
+def samples_list(active, collection_name=None):
+    links = [
+        {
+            "icon": "fa-list",
+            "href": ""
+        },
+        {
+            "icon": "fa-money-check",
+            "href": "sample-report"
+        },
+        {
+            "icon": "fa-chart-pie",
+            "href": "aggregate"
+        },
+        {
+            "icon": "fa-traffic-light",
+            "href": "pipeline-report"
+        },
+        {
+            "icon": "fa-link",
+            "href": "link-to-files"
+        }
+    ]
+    link_list = []
+    for item in links:
+        href = "/" + item["href"]
+        if collection_name is not None:
+            href = "/collection/{}/{}".format(collection_name, item["href"])
+        if active == item['href']:
+            link_list.append(dcc.Link(
+                html.I(className="fas {} fa-fw".format(item['icon'])),
+                className="btn btn-outline-secondary active",
+                href=href
+            ))
+        else:
+            link_list.append(dcc.Link(
+                html.I(className="fas {} fa-fw".format(item['icon'])),
+                className="btn btn-outline-secondary",
+                href=href
+            ))
+    return link_list
+
+external_scripts = [
+    'https://kit.fontawesome.com/24170a81ff.js',
+]
+
+app = dash.Dash(__name__,
+    external_stylesheets=[dbc.themes.BOOTSTRAP],
+    external_scripts=external_scripts
 )
 
-app.title = "beone"
+app.title = "BeONE"
 app.config["suppress_callback_exceptions"] = True
 cache = Cache(app.server, config={
     'CACHE_TYPE': 'filesystem',
@@ -30,26 +76,13 @@ cache = Cache(app.server, config={
 })
 cache_timeout = 60
 
-server = app.server
-app.config.suppress_callback_exceptions = True
-
-# Path
-BASE_PATH = pathlib.Path(__file__).parent.resolve()
-DATA_PATH = BASE_PATH.joinpath("data").resolve()
-
-# Read data
-dt = pd.read_csv('https://raw.githubusercontent.com/plotly/datasets/master/solar.csv')
-df = pd.read_csv('https://raw.githubusercontent.com/plotly/datasets/master/gapminder2007.csv')
-
-KEY = "BIFROST_DB_KEY"
-
-external_scripts = [
-    'https://kit.fontawesome.com/24170a81ff.js',
-]
+app.css.append_css(
+    {"external_url": "https://fonts.googleapis.com/css?family=Lato"})
 
 app.layout = html.Div(
     id="app-container",
     children=[
+        dcc.Location(id="url", refresh=False),
         dcc.Store(id="sample-store", data=[], storage_type='session'),
         dcc.Store(id="project-store", data=[], storage_type='session'),
         dcc.Store(id="param-store", data={}),
@@ -57,22 +90,54 @@ app.layout = html.Div(
         dcc.Store(id="selected-species", data=None),
         html.Div([
             html.Div(id='content', children=[
+
                 hc.html_topbar(),
+                html.Div([
+                    html.Button([
+                        html.I(id="topbar-toggle",
+                               # n_clicks=0,
+                               className="fas fa-angle-double-up"),
+                    ], style={"fontSize":'24px'})
+                ], style={'padding-left': '750px', 'padding-bottom': '20px'}),
                 html.Nav([
                     dcc.Tabs(
                         id="control-tabs",
-                        value="bifrost-tab",
+                        value="isolates-tab",
                         children=[
-                            dcc.Tab(className='circos-tab', label="Projects", value="projects-tab"),
-                            dcc.Tab(className='circos-tab', label="Analyses", value="results-tab"),
+                            dcc.Tab(className='circos-tab', label="Surveys", value="survey-tab"),
+                            dcc.Tab(className='circos-tab', label="Analyses", value="analyses-tab"),
                             dcc.Tab(className='circos-tab', label="Reports", value="reports-tab"),
-                            dcc.Tab(className='circos-tab', label="Bifrost", value="bifrost-tab"),
+                            dcc.Tab(className='circos-tab', label="Isolates", value="isolates-tab"),
                         ],
                         className='circos-control-tabs six columns'
                     ),
                 ], className='navbar navbar-expand topbar'),
+
                 html.Main([
-                    html.Div(id='tab-content'),
+                    html.Div([
+                        # dbc.Collapse(
+                        #     [
+                        #         html_filter_drawer()
+                        #     ], id="filter_panel"
+                        # ),
+                        # html.Div([
+                        #     html.Div([
+                        #         html.Div(
+                        #             samples_list('/'),
+                        #             className="btn-group shadow-sm",
+                        #             id="selected-view-buttons"
+                        #         ),
+                        #     ], className="col-4"),
+                        #     html.Div([
+                        #         html.Button(
+                        #             html.I(className="fas fa-filter fa-sm"),
+                        #             #className="btn btn-outline-secondary shadow-sm mx-auto d-block",
+                        #             id="filter_toggle"
+                        #         ),
+                        #     ], className="col-4"),
+                        # ], className="row mb-4"),
+                    ], id="samples-panel"),
+                    html.Div(id='tab-content', style={"padding-top":"10px"}),
                 ], className='container-fluid', role='main')
             ])
         ], id='content-wrapper', className="d-flex flex-column",
@@ -202,21 +267,24 @@ def update_selected_samples(n_clicks, rows, selected_rows):
 def render_content(tab, n_clicks, selected_run, selected_samples, project_samples):
     print('render_content')
 
-    if tab == 'projects-tab':
+    if tab == 'survey-tab':
+        if project_samples is None:
+            raise PreventUpdate
+        else:
+            samples = project_samples
+            print("the number of project samples is {}".format(len(samples)))
+            columns_names = global_vars.COLUMNS
 
-        samples = project_samples
-        print("the number of project samples is {}".format(len(samples)))
-        columns_names = global_vars.COLUMNS
+            return hc.html_tab_surveys(samples, columns_names)
 
-        return hc.html_tab_projects(samples, columns_names)
+    elif tab == 'analyses-tab':
 
-    elif tab == 'results-tab':
-        return hc.html_tab_results()
+            return hc.html_tab_analyses()
 
     elif tab == 'reports-tab':
         return hc.html_tab_reports()
 
-    elif tab == 'bifrost-tab':
+    elif tab == 'isolates-tab':
         if n_clicks == 0 or selected_run == []:
             if selected_samples is not None:
                 columns_names = global_vars.COLUMNS
@@ -228,7 +296,7 @@ def render_content(tab, n_clicks, selected_run, selected_samples, project_sample
             columns_names = global_vars.COLUMNS
             samples = selected_samples
 
-        print(samples)
+        print("the number of samples is: {}".format(len(samples)))
         return hc.html_tab_bifrost(samples, columns_names)
 
 @app.callback(
@@ -240,6 +308,50 @@ def render_content(tab, n_clicks, selected_run, selected_samples, project_sample
 )
 def update(reset):
     return [0, '', 0, '']
+
+@app.callback(
+    [Output("selected-view-buttons", "children")],
+    [Input("url", "pathname")],
+)
+def update_run_name(pathname):
+
+    if pathname is None or pathname == "/":
+        pathname = "/"
+    path = pathname.split("/")
+
+    samples_nav = "nav-item"
+    resequence_nav = "nav-item"
+
+    if path[1] == "collection":
+        #collection_view = True
+        if len(path) > 2: #/collection/collectionname
+            collection_name = path[2]
+            if len(path) > 3:  # /collection/collectionname/section
+                section = path[3]
+            else:  # /collection/collectionname
+                section = ""
+        else:  # /collection
+            section = ""
+    else:  # /section
+        section = path[1]
+
+    return [samples_list(section)]
+
+@app.callback(
+    [Output("topbar-collapse", "is_open")],
+    [Input("topbar-toggle", "n_clicks")],
+    [State("topbar-collapse", "is_open")]
+)
+def topbar_toggle(n, is_open):
+    print("topbar_toggle")
+    if n:
+        print("the number of clicks is {}".format(n))
+        if is_open:
+            return [False]
+        else:
+            return [True]
+    else:
+        raise PreventUpdate
 
 # Run the server
 if __name__ == "__main__":

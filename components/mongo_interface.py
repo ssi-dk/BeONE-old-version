@@ -37,9 +37,9 @@ def get_connection():
     if CONNECTION is not None:
         return CONNECTION
     else:
-        mongo_db_key = os.getenv("BIFROST_DB_KEY", None)
+        mongo_db_key = os.getenv("LOCAL_DB_KEY", None)
         if mongo_db_key is None:
-            exit("BIFROST_DB_KEY env variable is not set.")
+            exit("LOCAL_DB_KEY env variable is not set.")
         "Return mongodb connection"
         CONNECTION = pymongo.MongoClient(mongo_db_key)
         return CONNECTION
@@ -354,6 +354,11 @@ def filter(run_names=None,
 
     return query_result
 
+def get_sample_component(sample_names, component_name):
+    connection = pymongo.MongoClient()
+    db = connection["bifrost_prod"]
+
+    return list(db.sample_components.find({"sample.name": {"$in": sample_names}, "component.name": component_name}))
 
 def get_sample_runs(sample_ids):
     connection = get_connection()
@@ -572,12 +577,37 @@ def save_component(data_dict):
         )
     return data_dict
 
+def save_to_project(data_dict):
+
+    connection = get_connection()
+    db = connection['bifrost_prod']
+
+    projects = db.projects
+
+
+    if "_id" in data_dict:
+        data_dict = projects.find_one_and_update(
+            filter={"_id": data_dict["_id"]},
+            update={"$set": data_dict},
+            # return new doc if one is upserted
+            return_document=pymongo.ReturnDocument.AFTER,
+            upsert=True  # This might change in the future # insert the document if it does not exist
+        )
+    else:
+        data_dict = projects.find_one_and_update(
+            filter=data_dict,
+            update={"$setOnInsert": data_dict},
+            # return new doc if one is upserted
+            return_document=pymongo.ReturnDocument.AFTER,
+            upsert=True  # insert the document if it does not exist
+        )
+    return data_dict
+
 
 def get_run(run_name):
     connection = get_connection()
     db = connection.get_database()
     return db.runs.find_one({"name": run_name})
-
 
 def get_component(name=None, version=None):
     """
@@ -610,3 +640,4 @@ def set_comment(run_id, comment):
         return 1
     else:
         return 0
+

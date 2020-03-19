@@ -12,6 +12,48 @@ import components.import_data as import_data
 
 KEY = "BIFROST_DB_KEY"
 
+def samples_list(active, collection_name=None):
+    links = [
+        {
+            "icon": "fa-list",
+            "href": ""
+        },
+        {
+            "icon": "fa-money-check",
+            "href": "sample-report"
+        },
+        {
+            "icon": "fa-chart-pie",
+            "href": "aggregate"
+        },
+        {
+            "icon": "fa-traffic-light",
+            "href": "pipeline-report"
+        },
+        {
+            "icon": "fa-link",
+            "href": "link-to-files"
+        }
+    ]
+    link_list = []
+    for item in links:
+        href = "/" + item["href"]
+        if collection_name is not None:
+            href = "/collection/{}/{}".format(collection_name, item["href"])
+        if active == item['href']:
+            link_list.append(dcc.Link(
+                html.I(className="fas {} fa-fw".format(item['icon'])),
+                className="btn btn-outline-secondary active",
+                href=href
+            ))
+        else:
+            link_list.append(dcc.Link(
+                html.I(className="fas {} fa-fw".format(item['icon'])),
+                className="btn btn-outline-secondary",
+                href=href
+            ))
+    return link_list
+
 def html_div_main():
 
     return html.Div([
@@ -30,16 +72,7 @@ def html_div_main():
                                                                  'position':'relative',
                                                                  'zIndex':999}),
             table_main(),
-            # html.Div([
-            #     html.H5("Select specie",
-            #             className="m-0 font-weight-bold text-primary"),
-            #     dcc.Dropdown(
-            #         id="species-list",
-            #         #options=dropdowns_options()[1],
-            #         value=None
-            #     ),
-            # ], className='pretty_container three columns',
-            #     style={"border": "1px DarkGrey solid", 'padding-bottom': '5px', 'padding-left': '5px'}),
+
         ], className='pretty_container eleven columns', style={'border':'1px DarkGrey solid',
                                                                'padding-bottom':'5px',
                                                                'padding-left':'5px'})
@@ -87,41 +120,44 @@ def dropdown_species_options(selected_run):
     return species_options
 
 def html_topbar():
-    return html.Div([
-        html.Ul([
-            html.H5("Select Database"),
-            dcc.RadioItems(id="radiobuttons1",
-                           options=[
-                               {"label": "All ", "value": "all"},
-                               {"label": "Local ", "value": "active"},
-                               {"label": "Remote ", "value": "custom"},
-                           ],
-                           value="active",
-                           labelStyle={"display": "inline-block"},
-                           className="dcc_control",
-                           ),
-            dcc.Dropdown(
-                id="db-list",
-                options=dropdown_db_options(),
-                value=None
-            )
-        ], className='two columns', style={'display': 'inline-block'}),
+    collapse = dbc.Collapse([
         html.Div([
-            html.H5("Select Time Range", style={'padding-bottom':'22px'}),
-            dcc.DatePickerRange(
-                id="date-picker-select",
-                start_date=dt(2014, 1, 1),
-                end_date=dt(2014, 1, 15),
-                min_date_allowed=dt(2014, 1, 1),
-                max_date_allowed=dt(2014, 12, 31),
-                initial_visible_month=dt(2014, 1, 1),
-            )
-        ], className='two columns', style={'padding-left':'5px'}),
-
         html.Div([
             html.Ul([
                 html.Div([
-                    html.H6("Select Bifrost runs",
+                    html.H6("Select Database", className="m-0 text-primary"),
+                    dcc.RadioItems(id="radiobuttons1",
+                                   options=[
+                                       {"label": "All ", "value": "all"},
+                                       {"label": "Local ", "value": "active"},
+                                       {"label": "Remote ", "value": "custom"},
+                                   ],
+                                   value="active",
+                                   labelStyle={"display": "inline-block", 'padding-right':'10px'},
+                                   className="dcc_control",
+                                   ),
+                    dcc.Dropdown(
+                        id="db-list",
+                        options=dropdown_db_options(),
+                        value=None
+                    )
+                ], className='pretty_container two columns', style={'border': '1px DarkGrey solid',
+                                                                    'padding-bottom': '2px',
+                                                                     'zIndex': 999}),
+                html.Div([
+                    html.H6("Select Time Range", className="m-0 text-primary", style={'padding-bottom':'5px'}),
+                    dcc.DatePickerRange(
+                        id="date-picker-select",
+                        start_date=dt(2014, 1, 1),
+                        end_date=dt(2014, 1, 15),
+                        min_date_allowed=dt(2014, 1, 1),
+                        max_date_allowed=dt(2014, 12, 31),
+                        initial_visible_month=dt(2014, 1, 1),
+                    )
+                ], className='pretty_container three columns', style={'border': '1px DarkGrey solid',
+                                                                     'zIndex': 999}),
+                html.Div([
+                    html.H6("Select NGS run",
                             className="m-0 text-primary"),
                     dcc.Dropdown(
                         id="run-list",
@@ -129,7 +165,7 @@ def html_topbar():
                         value=None,
                         multi=True,
                     )
-                ], className='pretty_container five columns', style={'border': '1px DarkGrey solid',
+                ], className='pretty_container three columns', style={'border': '1px DarkGrey solid',
                                                                      'zIndex': 999}),
                 html.Div([
                     html.H6("Species",
@@ -139,37 +175,39 @@ def html_topbar():
                         options=import_data.get_species_list(),
                         value=None
                     ),
-                ], className='pretty_container three columns',
+                ], className='pretty_container two columns',
                     style={'display': 'inline-block', 'border': '1px DarkGrey solid',
                            'zIndex': 999}),
                 html.Div([
                     html.Div([
                         html.Div([
-                            dbc.Button("Upload run",
-                                       id='run-selector',
-                                       n_clicks=0,
-                                       size='sm'),
-                        ], className="two columns"),
+                            html.Button("Upload run",
+                                        id='run-selector',
+                                        n_clicks=0),
+                        ], className="col"),
                         html.Div([
-                            dbc.Button("Upload a specie",
-                                       id='specie-selector',
-                                       n_clicks=0,
-                                       size='sm')
-                        ], className="two columns"),
-                    ], className="col"),
+                            html.Button("Upload a specie",
+                                        id='specie-selector',
+                                        n_clicks=0)
+                        ], className="col", style={'padding-top': '5px'}),
+                    ], className="two columns", ),
                     html.Div([
                         html.Div([
-                            dbc.Button("Reset",
-                                       id='reset-button',
-                                       n_clicks=0,
-                                       size='sm')
+                            html.Button("Reset",
+                                        id='reset-button',
+                                        n_clicks=0)
                         ]),
-                    ], className='col', style={'display': 'inline-block', 'padding-top': '20px'}),
-                ], className='col'),
+                    ], className='two columns', style={'display': 'inline-block','padding-top': '85px'}),
+                ], className='two columns'),
 
             ], className='col'),
-        ], className='pretty_container eight columns', style={"border":"1px DarkGrey solid", 'padding-bottom':'5px', 'padding-left':'5px', 'height':'120px', 'text-align':'center'})
-    ], className='row', style={'padding-top':'5px', 'padding-bottom':'10px'})
+        ], className='pretty_container twelve columns', style={"border":"1px DarkGrey solid", 'padding-bottom':'2px', 'padding-left':'2px', 'height':'135px', 'text-align':'center'})
+        ], className='row', style={'padding-top':'5px','padding-left':'20px','padding-right':'20px', 'padding-bottom':'2px'}),
+
+    ], id='topbar-collapse', is_open=[True])
+
+    return collapse
+
 
 def html_div_filter():
 
@@ -257,6 +295,22 @@ def html_tab_bifrost(data, column_names):
     view = html.Div([
         html.Div([
             html.Div([
+                html.Div(
+                    samples_list('/'),
+                    className="btn-group-lg shadow-sm",
+                    id="selected-view-buttons"
+                ),
+            ], className="col-100", style={'padding-left':'600px'}),
+            # html.Div([
+            #     html.Button(
+            #         html.I(className="fas fa-filter fa-sm"),
+            #         #className="btn btn-outline-secondary shadow-sm mx-auto d-block",
+            #         id="filter_toggle"
+            #     ),
+            # ], className="col-4"),
+        ], className="row mb-4"),
+        html.Div([
+            html.Div([
                 dbc.Button("Select all",
                            id='select-all-button',
                            n_clicks=0,
@@ -266,7 +320,7 @@ def html_tab_bifrost(data, column_names):
                                                 'padding-bottom': '5px'}),
         html.Div([
             html.Div([
-                dbc.Button("Upload",
+                dbc.Button("Load to Survey",
                            id='upload-samples',
                            n_clicks=0,
                            size='sm')
@@ -283,16 +337,7 @@ def html_tab_bifrost(data, column_names):
                                                            'height': '1000px'})
     return [view]
 
-def html_tab_projects(data,column_names):
-    view = html.Div([
-            table_main(data,column_names),
-        ], className='pretty_container eleven columns', style={'border':'1px DarkGrey solid',
-                                                               'padding-bottom':'5px',
-                                                               'padding-left':'5px',
-                                                               'height': '1000px'})
-    return [view]
-
-def html_tab_results():
+def html_tab_surveys(data,column_names):
     view = html.Div([
         html.Div([
         ], className='pretty_container four columns', style={'border': '1px DarkGrey solid',
@@ -300,6 +345,31 @@ def html_tab_results():
                                                              'padding-left': '5px',
                                                              'position': 'relative',
                                                              'zIndex': 999}),
+        table_main(data, column_names),
+    ], className='pretty_container eleven columns', style={'border': '1px DarkGrey solid',
+                                                           'padding-bottom': '5px',
+                                                           'padding-left': '5px'})
+    return [view]
+
+def html_tab_analyses():
+    view = html.Div([
+        html.Div([
+        ], className='pretty_container four columns', style={'border': '1px DarkGrey solid',
+                                                             'padding-bottom': '5px',
+                                                             'padding-left': '5px',
+                                                             'position': 'relative',
+                                                             'zIndex': 999}),
+        html.Div([
+            html.Div([
+                html.Div([
+                    html.Button(
+                        html.I(className="fas fa-filter fa-sm"),
+                        className="btn btn-outline-secondary shadow-sm mx-auto d-block",
+                        id="filter_toggle"
+                    ),
+                ], className="col-4"),
+            ], className="row mb-4"),
+        ], id="samples-panel", className="d-none"),
     ], className='pretty_container eleven columns', style={'border': '1px DarkGrey solid',
                                                            'padding-bottom': '5px',
                                                            'padding-left': '5px'})
@@ -417,7 +487,7 @@ def generate_table(tests_df):
 
     return tests_df
 
-def table_main(data,column_names):
+def table_main(data, column_names):
     print("table_main")
     #print(data)
     # if columns is None:
