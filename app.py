@@ -2,11 +2,14 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_bootstrap_components as dbc
+import components.admin as admin
 from dash.dependencies import Input, Output, State
 from components import html_components as hc
 from components import mongo_interface as mongo_interface
 from flask_caching import Cache
 from components import import_data as import_data
+from components.sample_report import SAMPLE_PAGESIZE, sample_report, children_sample_list_report, samples_next_page
+from components.aggregate_report import aggregate_report, update_aggregate_fig, aggregate_species_dropdown
 import components.global_vars as global_vars
 from dash.exceptions import PreventUpdate
 
@@ -114,29 +117,15 @@ app.layout = html.Div(
                 ], className='navbar navbar-expand topbar'),
 
                 html.Main([
-                    html.Div([
-                        # dbc.Collapse(
-                        #     [
-                        #         html_filter_drawer()
-                        #     ], id="filter_panel"
-                        # ),
-                        # html.Div([
-                        #     html.Div([
-                        #         html.Div(
-                        #             samples_list('/'),
-                        #             className="btn-group shadow-sm",
-                        #             id="selected-view-buttons"
-                        #         ),
-                        #     ], className="col-4"),
-                        #     html.Div([
-                        #         html.Button(
-                        #             html.I(className="fas fa-filter fa-sm"),
-                        #             #className="btn btn-outline-secondary shadow-sm mx-auto d-block",
-                        #             id="filter_toggle"
-                        #         ),
-                        #     ], className="col-4"),
-                        # ], className="row mb-4"),
-                    ], id="samples-panel"),
+                        html.Div([
+                            html.Div([
+                                html.Div(
+                                    samples_list('/'),
+                                    className="btn-group-lg shadow-sm",
+                                    id="selected-view-buttons"
+                                ),
+                            ], className="col-100", style={'padding-left':'600px', 'padding-top': '30px'}),
+                        ], className="row mb-4"),
                     html.Div(id='tab-content', style={"padding-top":"10px"}),
                 ], className='container-fluid', role='main')
             ])
@@ -206,28 +195,29 @@ def upload_runs(n_clicks, n_clicks2, selected_run, selected_specie):
 
     elif n_clicks != 0 and n_clicks2 == 0:
         species_options = mongo_interface.get_species_list(selected_run)
-        samples = import_data.filter_all(run_names=selected_run)
-        samples = hc.generate_table(samples)
+        samples = import_data.filter_all(run_names=selected_run,
+                                         projection={'name': 1})
+        #samples = hc.generate_table(samples)
+        if "_id" in samples:
+            samples["_id"] = samples["_id"].astype(str)
 
         samples = samples.to_dict("rows")
-        print(selected_run)
-        print(selected_specie)
-        print(samples)
-        print(species_options)
+
+        print("The samples are: {}".format(samples))
         return [selected_run, [], samples, species_options]
 
     elif n_clicks != 0 and n_clicks2 != 0:
         species_options = mongo_interface.get_species_list(selected_run)
         samples = import_data.filter_all(species=[selected_specie], run_names=selected_run)
-        samples = hc.generate_table(samples)
+        #samples = hc.generate_table(samples)
+
+        if "_id" in samples:
+            samples["_id"] = samples["_id"].astype(str)
 
         samples = samples.to_dict("rows")
 
         selected_specie = ["{}".format(selected_specie)]
-        print(selected_run)
-        print("selected specie is: {}".format(selected_specie))
-        print(samples)
-        print(species_options)
+
         return [selected_run, selected_specie, samples, species_options]
 
 
@@ -262,9 +252,10 @@ def update_selected_samples(n_clicks, rows, selected_rows):
      Input('run-selector', 'n_clicks'),
      Input('run-list', 'value'),
      Input('sample-store', 'data'),
-     Input('project-store', 'data')]
+     Input('project-store', 'data'),
+     Input("url", "pathname")]
 )
-def render_content(tab, n_clicks, selected_run, selected_samples, project_samples):
+def render_content(tab, n_clicks, selected_run, selected_samples, project_samples, pathname):
     print('render_content')
 
     if tab == 'survey-tab':
@@ -285,19 +276,67 @@ def render_content(tab, n_clicks, selected_run, selected_samples, project_sample
         return hc.html_tab_reports()
 
     elif tab == 'isolates-tab':
-        if n_clicks == 0 or selected_run == []:
-            if selected_samples is not None:
+
+        if pathname is None or pathname == "/":
+            pathname = "/"
+        path = pathname.split("/")
+
+        if path[1] == "collection":
+            # collection_view = True
+            if len(path) > 2:  # /collection/collectionname
+                collection_name = path[2]
+                if len(path) > 3:  # /collection/collectionname/section
+                    section = path[3]
+                else:  # /collection/collectionname
+                    section = ""
+            else:  # /collection
+                section = ""
+        else:  # /section
+            section = path[1]
+
+        if section == "":
+            if n_clicks == 0 or selected_run == []:
+                if selected_samples is not None:
+                    columns_names = global_vars.COLUMNS
+                    samples = selected_samples
+                else:
+                    samples = []
+                    columns_names = global_vars.COLUMNS
+            else:
                 columns_names = global_vars.COLUMNS
                 samples = selected_samples
-            else:
-                samples = []
-                columns_names = global_vars.COLUMNS
-        else:
-            columns_names = global_vars.COLUMNS
-            samples = selected_samples
 
-        print("the number of samples is: {}".format(len(samples)))
-        return hc.html_tab_bifrost(samples, columns_names)
+            print("the number of samples is: {}".format(len(samples)))
+            view = hc.html_tab_bifrost(samples, columns_names)
+
+        elif section == "sample-report":
+            print("selected_samples are : {}".format(selected_samples))
+            view = sample_report(selected_samples)
+        # elif section == "pipeline-report":
+        #     view = pipeline_report(sample_store)
+        # elif section == "resequence-report":
+        #     samples_panel = "d-none"
+        #     view = resequence_report(collection_name)
+        # elif section == "link-to-files":
+        #     view = link_to_files(sample_store)
+        elif section == "aggregate-report":
+            view = aggregate_report(selected_samples)
+        else:
+           # samples_panel = "d-none"
+            view = "Not found"
+
+        # if collection_view:
+        #     collection_selector_list = "row"
+        #     run_list = "d-none"
+        #     collections_nav += " active"
+        # elif section == "resequence-report":
+        #     collection_selector_list = "row"
+        #     run_list = "d-none"
+        # else:
+        #     collection_selector_list = "row d-none"
+        #     run_list = ""
+
+        return [view]
 
 @app.callback(
     [Output('run-selector','n_clicks'),
@@ -337,6 +376,57 @@ def update_run_name(pathname):
 
     return [samples_list(section)]
 
+
+@app.callback(
+    Output("sample-report", "children"),
+    [Input("page-n", "children"),
+     Input("sample-store", "data")]
+)
+def fill_sample_report(page_n, sample_store):
+    page_n = int(page_n)
+    sample_ids = list(
+        map(lambda x: x["_id"], sample_store))
+    if len(sample_ids) == 0:
+        return None
+
+    data_table = import_data.filter_all(
+        sample_ids=sample_ids,
+        pagination={"page_size": SAMPLE_PAGESIZE, "current_page": page_n})
+    max_page = len(sample_store) // SAMPLE_PAGESIZE
+    # We need to have fake radio buttons with the same ids to account for times
+    # when not all SAMPLE_PAGESIZE samples are shown and are not taking the ids required by the callback
+    html_fake_radio_buttons = html.Div([dcc.RadioItems(
+        options=[
+            {'label': '', 'value': 'nosample'}
+        ],
+        value='noaction',
+        id="sample-radio-{}".format(n_sample)
+    ) for n_sample in range(len(data_table), SAMPLE_PAGESIZE)], style={"display": "none"})
+    return [
+        html.H4("Page {} of {}".format(page_n + 1, max_page + 1)),
+        html.Div(children_sample_list_report(data_table)),
+        html_fake_radio_buttons,
+        admin.html_qc_expert_form(),
+        html.H4("Page {} of {}".format(page_n + 1, max_page + 1)),
+        dcc.ConfirmDialog(
+            id='qc-confirm',
+            message='Are you sure you want to send sample feedback?',
+        )
+    ]
+
+@app.callback(
+    Output("page-n",
+            "children"),
+    [Input("prevpage", "n_clicks_timestamp"),
+        Input("prevpage2", "n_clicks_timestamp"),
+        Input("nextpage", "n_clicks_timestamp"),
+        Input("nextpage2", "n_clicks_timestamp")],
+    [State("page-n", "children"),
+        State("max-page", "children")]
+)
+def next_page(prev_ts, prev_ts2, next_ts, next_ts2, page_n, max_page):
+    return samples_next_page(prev_ts, prev_ts2, next_ts, next_ts2, page_n, max_page)
+
 @app.callback(
     [Output("topbar-collapse", "is_open")],
     [Input("topbar-toggle", "n_clicks")],
@@ -345,7 +435,7 @@ def update_run_name(pathname):
 def topbar_toggle(n, is_open):
     print("topbar_toggle")
     if n:
-        print("the number of clicks is {}".format(n))
+        #print("the number of clicks is {}".format(n))
         if is_open:
             return [False]
         else:

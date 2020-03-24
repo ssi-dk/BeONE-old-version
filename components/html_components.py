@@ -293,22 +293,7 @@ def html_div_filter():
 
 def html_tab_bifrost(data, column_names):
     view = html.Div([
-        html.Div([
-            html.Div([
-                html.Div(
-                    samples_list('/'),
-                    className="btn-group-lg shadow-sm",
-                    id="selected-view-buttons"
-                ),
-            ], className="col-100", style={'padding-left':'600px'}),
-            # html.Div([
-            #     html.Button(
-            #         html.I(className="fas fa-filter fa-sm"),
-            #         #className="btn btn-outline-secondary shadow-sm mx-auto d-block",
-            #         id="filter_toggle"
-            #     ),
-            # ], className="col-4"),
-        ], className="row mb-4"),
+
         html.Div([
             html.Div([
                 dbc.Button("Select all",

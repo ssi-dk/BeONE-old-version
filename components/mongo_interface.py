@@ -354,11 +354,13 @@ def filter(run_names=None,
 
     return query_result
 
-def get_sample_component(sample_names, component_name):
+def get_sample_component(sample_names):
     connection = pymongo.MongoClient()
     db = connection["bifrost_prod"]
 
-    return list(db.sample_components.find({"sample.name": {"$in": sample_names}, "component.name": component_name}))
+    return list(db.sample_components.find({"sample.name": {"$in": sample_names}}, {"component": 1,
+                                                                                                                     "sample": 1,
+                                                                                                                     "summary": 1}))
 
 def get_sample_runs(sample_ids):
     connection = get_connection()
@@ -380,7 +382,6 @@ def get_assemblies_paths(sample_ids):
         "sample._id": {"$in": list(map(lambda x: ObjectId(x), sample_ids))},
         "component.name": "assemblatron"
     }, {"path": 1, "sample": 1}))
-
 
 def get_species_QC_values(ncbi_species):
     connection = get_connection()
@@ -453,7 +454,6 @@ def get_sample_QC_status(last_runs):
         samples_runs_qc[name] = sample_dict
     return samples_runs_qc
 
-
 def get_last_runs(run, n, runtype):
     connection = get_connection()
     db = connection.get_database()
@@ -481,12 +481,10 @@ def get_samples(sample_id_list):
 
     return list(db.samples.find({"_id": {"$in": sample_id_list}}))
 
-
 def get_sample(sample_id):
     connection = get_connection()
     db = connection.get_database()
     return db.samples.find_one({"_id": sample_id})
-
 
 def save_sample(data_dict):
     """COPIED FROM BIFROSTLIB Insert sample dict into mongodb.
@@ -511,7 +509,6 @@ def save_sample(data_dict):
             upsert=True  # insert the document if it does not exist
         )
     return data_dict
-
 
 def save_sample_component(data_dict):
     """COPIED FROM BIFROSTLIB. Insert sample dict into mongodb.

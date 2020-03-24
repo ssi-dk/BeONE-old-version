@@ -45,7 +45,6 @@ def filter_all(species=None, species_source=None, group=None,
             projection=projection)
     else:
         query_result = mongo_interface.filter(
-            datab,
             samples=sample_ids, pagination=pagination,
             projection=projection)
     return pd.io.json.json_normalize(query_result)
