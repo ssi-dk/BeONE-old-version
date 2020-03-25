@@ -73,12 +73,12 @@ def aggregate_species_dropdown(sample_store, plot_species, selected_species):
         sample_ids=sample_ids,
         projection={"properties": 1})
 
-    species_col = "properties.species_detection.summary.detected_species"
+    species_col = "properties.detected_species"
 
     if plot_species == "provided":
-        species_col = "properties.sample_info.summary.provided_species"
+        species_col = "properties.provided_species"
     elif plot_species == "detected":
-        species_col = "properties.species_detection.summary.detected_species"
+        species_col = "properties.detected_species"
 
     if species_col not in plot_df:
         plot_df[species_col] = np.nan
@@ -333,7 +333,7 @@ def update_aggregate_fig(selected_species, sample_store, plot_species_source):
     return fig, sunburst_fig
 
 def generate_sunburst(plot_df):
-    species_col = "properties.species_detection.summary.species"
+    species_col = "properties.species"
     mlst_col = "properties.mlst.summary.strain"
     if not (species_col in plot_df.columns and mlst_col in plot_df.columns):
         return go.Figure()

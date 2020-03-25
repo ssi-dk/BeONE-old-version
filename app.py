@@ -1,3 +1,4 @@
+import os
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -15,10 +16,15 @@ from dash.exceptions import PreventUpdate
 
 import numpy as np
 import pandas as pd
+import plotly.graph_objects as go
 import datetime
 from datetime import datetime as dt
 import pathlib
 import keys
+
+os.chdir('/Users/stefanocardinale/Documents/SSI/DATABASES/')
+
+df = pd.read_csv('map_testing_data.csv', sep=";")
 
 def samples_list(active, collection_name=None):
     links = [
@@ -319,7 +325,7 @@ def render_content(tab, n_clicks, selected_run, selected_samples, project_sample
         #     view = resequence_report(collection_name)
         # elif section == "link-to-files":
         #     view = link_to_files(sample_store)
-        elif section == "aggregate-report":
+        elif section == "aggregate":
             view = aggregate_report(selected_samples)
         else:
            # samples_panel = "d-none"
@@ -415,6 +421,28 @@ def fill_sample_report(page_n, sample_store):
     ]
 
 @app.callback(
+    [Output("plot-species", "value"),
+     Output("plot-species", "options")],
+    [Input("sample-store", "data"),
+     Input("plot-species-source", "value")],
+    [State("plot-species", "value")]
+)
+def aggregate_species_dropdown_f(sample_store, plot_species, selected_species):
+    return aggregate_species_dropdown(sample_store, plot_species, selected_species)
+
+@app.callback(
+    [Output("summary-plot", "figure"),
+     Output("mlst-plot", "figure")],
+    [Input("plot-species", "value")],
+    [State("sample-store", "data"),
+    State("plot-species-source", "value")]
+)
+@cache.memoize(timeout=cache_timeout)  # in seconds
+def update_aggregate_fig_f(selected_species, samples, plot_species_source):
+    return update_aggregate_fig(selected_species, samples, plot_species_source)
+
+
+@app.callback(
     Output("page-n",
             "children"),
     [Input("prevpage", "n_clicks_timestamp"),
@@ -442,6 +470,80 @@ def topbar_toggle(n, is_open):
             return [True]
     else:
         raise PreventUpdate
+
+
+@app.callback(
+    Output('datatable-interact-map', 'figure'),
+    [Input('datatable-interact-location', 'derived_virtual_selected_rows')]
+)
+def update_figures(derived_virtual_selected_rows):
+    # When the table is first rendered, `derived_virtual_data` and
+    # `derived_virtual_selected_rows` will be `None`. This is due to an
+    # idiosyncracy in Dash (unsupplied properties are always None and Dash
+    # calls the dependent callbacks when the component is first rendered).
+    # So, if `rows` is `None`, then the component was just rendered
+    # and its value will be the same as the component's dataframe.
+    # Instead of setting `None` in here, you could also set
+    # `derived_virtual_data=df.to_rows('dict')` when you initialize
+    # the component.
+    if derived_virtual_selected_rows is None:
+        derived_virtual_selected_rows = []
+
+    dff = df
+
+    mapbox_access_token = "pk.eyJ1Ijoic3RlZmFub2NhcmRpbmFsZSIsImEiOiJjazg3aWUwengwZmg1M2VwcnJzc3pnNmNkIn0.W_t9-PNkeag5yie239nI4Q"
+
+    # Generate a list for hover text display
+    # textList = []
+    # for area, region in zip(dfs[keyList[0]]['Province/State'], dfs[keyList[0]]['Country/Region']):
+    #
+    #     if type(area) is str:
+    #         if region == "Hong Kong" or region == "Macau" or region == "Taiwan":
+    #             textList.append(area)
+    #         else:
+    #             textList.append(area + ', ' + region)
+    #     else:
+    #         textList.append(region)
+
+    fig2 = go.Figure(go.Scattermapbox(
+        lat=dff['lat'],
+        lon=dff['lon'],
+        mode='markers',
+        marker=go.scattermapbox.Marker(
+            color='#ca261d'),
+        #     #size=dfs[keyList[0]]['Confirmed'].tolist(),
+        #     sizemin=4,
+        #     sizemode='area',
+        #     sizeref=2. * max(dff[keyList[0]]['Confirmed'].tolist()) / (150. ** 2),
+        # ),
+        #text=textList,
+        hovertemplate="<b>%{text}</b><br><br>" +
+                      "%{hovertext}<br>" +
+                      "<extra></extra>")
+    )
+    fig2.update_layout(
+        plot_bgcolor='#151920',
+        paper_bgcolor='#cbd2d3',
+        margin=go.layout.Margin(l=10, r=10, b=10, t=0, pad=40),
+        hovermode='closest',
+        transition={'duration': 1000},
+        mapbox=go.layout.Mapbox(
+            accesstoken=mapbox_access_token,
+            style="light",
+            # The direction you're facing, measured clockwise as an angle from true north on a compass
+            bearing=0,
+            center=go.layout.mapbox.Center(
+                lat=55.6659557 if len(derived_virtual_selected_rows) == 0 else dff['lat'][
+                    derived_virtual_selected_rows[0]],
+                lon=12.5898586 if len(derived_virtual_selected_rows) == 0 else dff['lon'][
+                    derived_virtual_selected_rows[0]]
+            ),
+            pitch=0,
+            zoom=5 if len(derived_virtual_selected_rows) == 0 else 4
+        )
+    )
+
+    return fig2
 
 # Run the server
 if __name__ == "__main__":

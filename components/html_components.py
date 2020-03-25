@@ -1,4 +1,5 @@
 from datetime import datetime as dt
+import os
 
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
@@ -330,7 +331,7 @@ def html_tab_surveys(data,column_names):
                                                              'padding-left': '5px',
                                                              'position': 'relative',
                                                              'zIndex': 999}),
-        table_main(data, column_names),
+        map(data),
     ], className='pretty_container eleven columns', style={'border': '1px DarkGrey solid',
                                                            'padding-bottom': '5px',
                                                            'padding-left': '5px'})
@@ -522,3 +523,59 @@ def table_main(data, column_names):
             page_action='none',
             id="datatable-ssi_stamper")
     return table
+
+def map(data):
+    os.chdir('/Users/stefanocardinale/Documents/SSI/DATABASES/')
+
+    df = pd.read_csv('map_testing_data.csv', sep=";")
+
+    view = html.Div(
+        id='dcc-map',
+        style={'marginLeft': '1.5%', 'marginRight': '1.5%', 'marginBottom': '.5%'},
+        children=[
+            html.Div(style={'width': '90%', 'marginRight': '.8%', 'display': 'inline-block', 'verticalAlign': 'top'},
+                     children=[
+                         html.H5(style={'textAlign': 'center', 'backgroundColor': '#cbd2d3',
+                                        'color': '#292929', 'padding': '1rem', 'marginBottom': '0'},
+                                 children='Cases overview'),
+                         dcc.Graph(
+                             id='datatable-interact-map',
+                             style={'height': '700px'},
+                         )
+                     ]),
+            html.Div(style={'width': '90%', 'display': 'inline-block', 'verticalAlign': 'top'},
+                     children=[
+                         html.H5(style={'textAlign': 'center', 'backgroundColor': '#cbd2d3',
+                                        'color': '#292929', 'padding': '1rem', 'marginBottom': '0'},
+                                 children='Cases by Country/Regions'),
+                         dash_table.DataTable(
+                             id='datatable-interact-location',
+                             # Don't show coordinates
+                             columns=[{"name": i, "id": i} for i in df.columns[3:8]],
+                             # But still store coordinates in the table for interactivity
+                             data=df.to_dict("rows"),
+                             row_selectable="single",
+                             # selected_rows=[],
+                             sort_action="native",
+                             style_as_list_view=False,
+                             style_cell={
+                                 'font_family': 'Arial',
+                                 'font_size': '1.5rem',
+                                 'padding': '.1rem',
+                                 'backgroundColor': '#f4f4f2',
+                                 'textAlign': 'center'
+                             },
+                             fixed_rows={'headers': True, 'data': 0},
+                             style_table={
+                                 'maxHeight': '500px',
+                                 # 'overflowY':'scroll',
+                                 'overflowX': 'scroll',
+                             },
+                             style_header={
+                                 'backgroundColor': '#f4f4f2',
+                                 'fontWeight': 'bold'},
+                             style_cell_conditional=[],
+                         )
+                     ])
+        ])
+    return view
