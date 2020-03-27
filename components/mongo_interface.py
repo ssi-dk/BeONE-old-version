@@ -63,9 +63,9 @@ def get_db_list():
     print(db_options)
     return db_options
 
-def get_run_list(datab):
+def get_run_list():
     connection = get_connection()
-    db = connection[datab]
+    db = connection['bifrost_upgrade_test']
     # Fastest.
     runs = list(db.runs.find({},  # {"type": "routine"}, #Leave in routine
                              {"name": 1,
@@ -117,7 +117,7 @@ def get_group_list(run_name=None):
 def get_species_list(run_name=None):
     connection = get_connection()
 
-    db = connection['bifrost_prod']
+    db = connection['bifrost_upgrade_test']
     # if species_source == "provided":
     #     spe_field = "properties.sample_info.summary.provided_species"
     # else:
@@ -177,7 +177,7 @@ def get_species_list(run_name=None):
 
 def get_samples_id(run_name=None):
     connection = get_connection()
-    db = connection['bifrost_prod']
+    db = connection['bifrost_upgrade_test']
 
     if run_name is not None:
         run = list(db.runs.find(
@@ -218,7 +218,7 @@ def get_samples_id(run_name=None):
 
 def get_filtered_samples(specie):
     connection = get_connection()
-    db = connection['bifrost_prod']
+    db = connection['bifrost_upgrade_test']
 
     # run = db.runs.find_one(
     #     {"name": run_name},
@@ -269,7 +269,7 @@ def filter(run_names=None,
     else:
         spe_field = "properties.species"
     connection = get_connection()
-    db = connection['bifrost_prod']
+    db = connection['bifrost_upgrade_test']
     query = []
     sample_set = set()
     if sample_names is not None and len(sample_names) != 0:
@@ -356,7 +356,7 @@ def filter(run_names=None,
 
 def get_sample_component(sample_names):
     connection = pymongo.MongoClient()
-    db = connection["bifrost_prod"]
+    db = connection["bifrost_upgrade_test"]
 
     return list(db.sample_components.find({"sample.name": {"$in": sample_names}}, {"component": 1,
                                                                                                                      "sample": 1,
@@ -477,7 +477,7 @@ def get_last_runs(run, n, runtype):
 
 def get_samples(sample_id_list):
     connection = get_connection()
-    db = connection['bifrost_prod']
+    db = connection['bifrost_upgrade_test']
 
     return list(db.samples.find({"_id": {"$in": sample_id_list}}))
 
@@ -577,7 +577,7 @@ def save_component(data_dict):
 def save_to_project(data_dict):
 
     connection = get_connection()
-    db = connection['bifrost_prod']
+    db = connection['bifrost_upgrade_test']
 
     projects = db.projects
 
@@ -611,7 +611,7 @@ def get_component(name=None, version=None):
     If no version is specified, it'll get the latest.
     """
     connection = get_connection()
-    db = connection.get_database()
+    db = connection['bifrost_upgrade_test']
     query = {}
     if name is not None:
         query["name"] = name

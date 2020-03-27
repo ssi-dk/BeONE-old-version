@@ -8,8 +8,8 @@ from bson.objectid import ObjectId
 def get_connection():
     return mongo_interface.get_connection()
 
-def get_run_list(datab):
-    return mongo_interface.get_run_list(datab)
+def get_run_list():
+    return mongo_interface.get_run_list()
 
 def get_sample_component(sample_names, component_name):
     return mongo_interface.get_sample_component(sample_names, component_name)

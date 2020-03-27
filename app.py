@@ -159,10 +159,10 @@ def select_all(n_clicks, data):
 )
 def update_runs_dropdown(datab):
     print("update_runs_dropdown")
-    if datab is None:
-        datab = 'bifrost_prod'
+    # if datab is None:
+    #     datab = 'bifrost_upgrade_test'
 
-    run_options = hc.dropdown_run_options(datab)[0]
+    run_options = hc.dropdown_run_options()[0]
     print(run_options)
 
     return [run_options]
@@ -202,7 +202,8 @@ def upload_runs(n_clicks, n_clicks2, selected_run, selected_specie):
     elif n_clicks != 0 and n_clicks2 == 0:
         species_options = mongo_interface.get_species_list(selected_run)
         samples = import_data.filter_all(run_names=selected_run,
-                                         projection={'name': 1})
+                                         projection={'_id': 1,
+                                                     'name': 1})
         #samples = hc.generate_table(samples)
         if "_id" in samples:
             samples["_id"] = samples["_id"].astype(str)
@@ -316,21 +317,33 @@ def render_content(tab, n_clicks, selected_run, selected_samples, project_sample
         if section == "":
             if n_clicks == 0 or selected_run == []:
                 if selected_samples is not None:
-                    columns_names = global_vars.COLUMNS
+                    columns_names = global_vars.QC_COLUMNS
                     samples = selected_samples
                 else:
                     samples = []
-                    columns_names = global_vars.COLUMNS
+                    columns_names = global_vars.QC_COLUMNS
             else:
-                columns_names = global_vars.COLUMNS
+                columns_names = global_vars.QC_COLUMNS
                 samples = selected_samples
 
             print("the number of samples is: {}".format(len(samples)))
             view = hc.html_tab_bifrost(samples, columns_names)
 
         elif section == "sample-report":
-            print("selected_samples are : {}".format(selected_samples))
-            view = sample_report(selected_samples)
+
+            ids = [sample['_id'] for sample in selected_samples]
+
+            query = import_data.filter_all(sample_ids=ids,
+                                           projection={'properties': 1})
+
+            if "_id" in query:
+                query["_id"] = query["_id"].astype(str)
+
+            data = query.to_dict("rows")
+
+
+            view = sample_report(data)
+
         # elif section == "pipeline-report":
         #     view = pipeline_report(sample_store)
         # elif section == "resequence-report":

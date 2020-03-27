@@ -90,9 +90,9 @@ def dropdown_db_options():
     # ]
     return db_list
 
-def dropdown_run_options(datab):
+def dropdown_run_options():
     print('dropdown_run_options')
-    run_list = import_data.get_run_list(datab)
+    run_list = import_data.get_run_list()
     run_options = [
         {
             "label": "{}".format(run["name"]),
@@ -292,7 +292,21 @@ def html_div_filter():
         )
     ])
 
-def html_tab_bifrost(data, column_names):
+def html_tab_bifrost(samples, column_names):
+
+    ids = [sample['_id'] for sample in samples]
+
+    query = import_data.filter_all(sample_ids=ids,
+                                     projection={'sample_sheet': 1})
+
+
+    if "_id" in query:
+        query["_id"] = query["_id"].astype(str)
+
+    data = query.to_dict("rows")
+
+    print(data)
+    print(samples)
     view = html.Div([
 
         html.Div([

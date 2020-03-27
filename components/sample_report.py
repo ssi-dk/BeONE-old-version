@@ -246,7 +246,7 @@ def html_sample_tables(sample_data, **kwargs):
         sample_sheet_table = html_table([
             ["Supplied name", get(sample_data, "sample_sheet.sample_name", "")],
             ["User Comments", get(sample_data, "sample_sheet.Comments", "")],
-            ["Supplying lab", get(sample_data, "sample_sheet.group", "")],
+            #["Supplying lab", get(sample_data, "sample_sheet.group", "")],
             {
                 "list": ["Provided species", html.I(
                     get(sample_data, "sample_sheet.provided_species", ""))],

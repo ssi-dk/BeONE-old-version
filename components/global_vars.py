@@ -20,8 +20,36 @@ FUNCS = [assemblatron_diff, assemblatron_contig_diff]
 
 QC_COLUMNS = [
     {
-        "name": "Reads",
-        "id": "summary.filtered_reads_num"
+        "name": "Batch",
+        "id": "sample_sheet.BatchNo"
+    },
+    {
+        "name": "Date",
+        "id": "sample_sheet.BatchRunDate"
+    },
+    {
+        "name": "Sample Nr.",
+        "id": "sample_sheet.SampleSupplied"
+    },
+    {
+        "name": "Sample Name",
+        "id": "sample_sheet.sample_name"
+    },
+    {
+        "name": "Type",
+        "id": "sample_sheet.SampleType"
+    },
+    {
+        "name": "Sequence Date",
+        "id": "sample_sheet.SequenceRunDate"
+    },
+    {
+        "name": "Run",
+        "id": "sample_sheet.run_name"
+    },
+    {
+        "name": "Provided Specie",
+        "id": "sample_sheet.provided_species"
     },
 ]
 
