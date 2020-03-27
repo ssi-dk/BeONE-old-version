@@ -323,21 +323,39 @@ def html_tab_bifrost(data, column_names):
                                                            'height': '1000px'})
     return [view]
 
-def html_tab_surveys(data,column_names):
-    view = html.Div([
-        html.Div([
-        ], className='pretty_container four columns', style={'border': '1px DarkGrey solid',
-                                                             'padding-bottom': '5px',
-                                                             'padding-left': '5px',
-                                                             'position': 'relative',
-                                                             'zIndex': 999}),
-        map(data),
-    ], className='pretty_container eleven columns', style={'border': '1px DarkGrey solid',
-                                                           'padding-bottom': '5px',
-                                                           'padding-left': '5px'})
-    return [view]
+def html_tab_surveys(samples=None,column_names=None):
 
-def html_tab_analyses():
+    if samples is None:
+
+        view = html.Div([
+            html.Div([
+            ], className='pretty_container four columns', style={'border': '1px DarkGrey solid',
+                                                                 'padding-bottom': '5px',
+                                                                 'padding-left': '5px',
+                                                                 'position': 'relative',
+                                                                 'zIndex': 999}),
+            geomap(),
+        ], className='pretty_container eleven columns', style={'border': '1px DarkGrey solid',
+                                                               'padding-bottom': '5px',
+                                                               'padding-left': '5px'})
+        return [view]
+
+    else:
+        view = html.Div([
+            html.Div([
+            ], className='pretty_container four columns', style={'border': '1px DarkGrey solid',
+                                                                 'padding-bottom': '5px',
+                                                                 'padding-left': '5px',
+                                                                 'position': 'relative',
+                                                                 'zIndex': 999}),
+            metadata_table(),
+        ], className='pretty_container eleven columns', style={'border': '1px DarkGrey solid',
+                                                               'padding-bottom': '5px',
+                                                               'padding-left': '5px'})
+        return [view]
+
+def html_tab_analyses(samples, column_names):
+
     view = html.Div([
         html.Div([
         ], className='pretty_container four columns', style={'border': '1px DarkGrey solid',
@@ -345,17 +363,7 @@ def html_tab_analyses():
                                                              'padding-left': '5px',
                                                              'position': 'relative',
                                                              'zIndex': 999}),
-        html.Div([
-            html.Div([
-                html.Div([
-                    html.Button(
-                        html.I(className="fas fa-filter fa-sm"),
-                        className="btn btn-outline-secondary shadow-sm mx-auto d-block",
-                        id="filter_toggle"
-                    ),
-                ], className="col-4"),
-            ], className="row mb-4"),
-        ], id="samples-panel", className="d-none"),
+        table_main(samples, column_names)
     ], className='pretty_container eleven columns', style={'border': '1px DarkGrey solid',
                                                            'padding-bottom': '5px',
                                                            'padding-left': '5px'})
@@ -524,16 +532,89 @@ def table_main(data, column_names):
             id="datatable-ssi_stamper")
     return table
 
-def map(data):
+def metadata_table():
     os.chdir('/Users/stefanocardinale/Documents/SSI/DATABASES/')
 
     df = pd.read_csv('map_testing_data.csv', sep=";")
+
+    table = dash_table.DataTable(
+            data=df.to_dict("rows"),
+            row_selectable='multi',
+            filter_action='native',
+            style_table={
+                'maxHeight': '900px',
+                'overflowY': 'scroll',
+                'overflowX': 'scroll',
+            },
+            #columns=column_names,
+            columns=[{"name": i, "id": i} for i in df.columns[3:8]],
+            style_cell={
+                'minWidth': '180px',
+                'textAlign': 'center',
+                "fontFamily": "Arial",
+                'fontSize': '8',
+            },
+            style_header={
+                'backgroundColor': 'rgb(230, 230, 230)',
+                'fontWeight': 'bold',
+                'fontSize': '7',
+                'textAlign': 'center',
+                'whiteSpace': 'normal'
+            },
+            style_cell_conditional=[
+                {
+                    "if": {"column_id": "ssi_stamper_failed_tests"},
+                    "textAlign": "left"
+                }
+            ],
+            #fixed_rows={'headers': True},
+            # row_selectable='multi',
+            # filtering=True,  # Front end filtering
+            # sorting=True,
+            selected_rows=[],
+            # style_data_conditional=style_data_conditional,
+            # pagination_settings={
+            #     'current_page': 0,
+            #     'page_size': TABLE_PAGESIZE
+            # },
+            virtualization=False,
+            page_action='none',
+            id="metadata-table")
+
+    return table
+
+
+def geomap():
+    os.chdir('/Users/stefanocardinale/Documents/SSI/DATABASES/')
+
+    df = pd.read_csv('map_testing_data.csv', sep=";")
+
+    tmp = df
+    tmp = tmp.set_index(['Hospital'])
+
+    hospitals = tmp.groupby('Hospital')
+    # cases = []
+    # for k in hospitals.groups:
+    #     cases.append(len(hospitals.groups[k]))
+    print(hospitals)
+
+    dff = [
+        {
+            "Hospital": "{}".format(k),
+            "cases": len(hospitals.groups[k]),
+            'lat': tmp.loc[k]['lat'].values[0],
+            'lon': tmp.loc[k]['lon'].values[0]
+        } for k in hospitals.groups
+    ]
+
+    print(dff)
+    dfs = pd.DataFrame(dff)
 
     view = html.Div(
         id='dcc-map',
         style={'marginLeft': '1.5%', 'marginRight': '1.5%', 'marginBottom': '.5%'},
         children=[
-            html.Div(style={'width': '90%', 'marginRight': '.8%', 'display': 'inline-block', 'verticalAlign': 'top'},
+            html.Div(style={'width': '74.8%', 'marginRight': '.8%', 'display': 'inline-block', 'verticalAlign': 'top'},
                      children=[
                          html.H5(style={'textAlign': 'center', 'backgroundColor': '#cbd2d3',
                                         'color': '#292929', 'padding': '1rem', 'marginBottom': '0'},
@@ -543,7 +624,7 @@ def map(data):
                              style={'height': '700px'},
                          )
                      ]),
-            html.Div(style={'width': '90%', 'display': 'inline-block', 'verticalAlign': 'top'},
+            html.Div(style={'width': '20.8%', 'height': '700px', 'display': 'inline-block', 'verticalAlign': 'top'},
                      children=[
                          html.H5(style={'textAlign': 'center', 'backgroundColor': '#cbd2d3',
                                         'color': '#292929', 'padding': '1rem', 'marginBottom': '0'},
@@ -551,10 +632,10 @@ def map(data):
                          dash_table.DataTable(
                              id='datatable-interact-location',
                              # Don't show coordinates
-                             columns=[{"name": i, "id": i} for i in df.columns[3:8]],
+                             columns=[{"name": i, "id": i} for i in df.columns[3:4]],
                              # But still store coordinates in the table for interactivity
-                             data=df.to_dict("rows"),
-                             row_selectable="single",
+                             data=dfs.to_dict("rows"),
+                             row_selectable="multi",
                              # selected_rows=[],
                              sort_action="native",
                              style_as_list_view=False,
@@ -567,7 +648,7 @@ def map(data):
                              },
                              fixed_rows={'headers': True, 'data': 0},
                              style_table={
-                                 'maxHeight': '500px',
+                                 'maxHeight': '900px',
                                  # 'overflowY':'scroll',
                                  'overflowX': 'scroll',
                              },

@@ -258,47 +258,60 @@ def update_selected_samples(n_clicks, rows, selected_rows):
      Input('run-selector', 'n_clicks'),
      Input('run-list', 'value'),
      Input('sample-store', 'data'),
-     Input('project-store', 'data'),
-     Input("url", "pathname")]
+     Input('project-store', 'data')],
+     [State("url", "pathname")]
 )
 def render_content(tab, n_clicks, selected_run, selected_samples, project_samples, pathname):
     print('render_content')
+    if pathname is None or pathname == "/":
+        pathname = "/"
+    path = pathname.split("/")
+
+    if path[1] == "collection":
+        # collection_view = True
+        if len(path) > 2:  # /collection/collectionname
+            collection_name = path[2]
+            if len(path) > 3:  # /collection/collectionname/section
+                section = path[3]
+            else:  # /collection/collectionname
+                section = ""
+        else:  # /collection
+            section = ""
+    else:  # /section
+        section = path[1]
 
     if tab == 'survey-tab':
-        if project_samples is None:
-            raise PreventUpdate
-        else:
-            samples = project_samples
-            print("the number of project samples is {}".format(len(samples)))
-            columns_names = global_vars.COLUMNS
+        if section == "":
+            if project_samples is None:
+                raise PreventUpdate
+            else:
+                samples = project_samples
+                print("the number of project samples is {}".format(len(samples)))
+                columns_names = global_vars.COLUMNS
 
-            return hc.html_tab_surveys(samples, columns_names)
+                return hc.html_tab_surveys(samples, columns_names)
+
+        elif section == "sample-report":
+
+            return hc.html_tab_surveys()
 
     elif tab == 'analyses-tab':
+        if section == "":
+            if project_samples is None:
+                raise PreventUpdate
+            else:
+                samples = project_samples
+                print("the number of project samples is {}".format(len(samples)))
+                columns_names = global_vars.COLUMNS
 
-            return hc.html_tab_analyses()
+                return hc.html_tab_analyses(samples, columns_names)
+        else:
+            raise PreventUpdate
 
     elif tab == 'reports-tab':
         return hc.html_tab_reports()
 
     elif tab == 'isolates-tab':
-
-        if pathname is None or pathname == "/":
-            pathname = "/"
-        path = pathname.split("/")
-
-        if path[1] == "collection":
-            # collection_view = True
-            if len(path) > 2:  # /collection/collectionname
-                collection_name = path[2]
-                if len(path) > 3:  # /collection/collectionname/section
-                    section = path[3]
-                else:  # /collection/collectionname
-                    section = ""
-            else:  # /collection
-                section = ""
-        else:  # /section
-            section = path[1]
 
         if section == "":
             if n_clicks == 0 or selected_run == []:
@@ -355,10 +368,12 @@ def update(reset):
     return [0, '', 0, '']
 
 @app.callback(
-    [Output("selected-view-buttons", "children")],
+    [Output("selected-view-buttons", "children"),
+     Output('control-tabs', 'value')],
     [Input("url", "pathname")],
+    [State('control-tabs', 'value')],
 )
-def update_run_name(pathname):
+def update_url(pathname, tab):
 
     if pathname is None or pathname == "/":
         pathname = "/"
@@ -380,7 +395,8 @@ def update_run_name(pathname):
     else:  # /section
         section = path[1]
 
-    return [samples_list(section)]
+    tab == '{}'.format(tab)
+    return [samples_list(section), tab]
 
 
 @app.callback(
@@ -390,13 +406,13 @@ def update_run_name(pathname):
 )
 def fill_sample_report(page_n, sample_store):
     page_n = int(page_n)
-    sample_ids = list(
-        map(lambda x: x["_id"], sample_store))
-    if len(sample_ids) == 0:
+    sample_names = list(
+        map(lambda x: x["name"], sample_store))
+    if len(sample_names) == 0:
         return None
 
     data_table = import_data.filter_all(
-        sample_ids=sample_ids,
+        sample_names=sample_names,
         pagination={"page_size": SAMPLE_PAGESIZE, "current_page": page_n})
     max_page = len(sample_store) // SAMPLE_PAGESIZE
     # We need to have fake radio buttons with the same ids to account for times
@@ -443,8 +459,7 @@ def update_aggregate_fig_f(selected_species, samples, plot_species_source):
 
 
 @app.callback(
-    Output("page-n",
-            "children"),
+    Output("page-n", "children"),
     [Input("prevpage", "n_clicks_timestamp"),
         Input("prevpage2", "n_clicks_timestamp"),
         Input("nextpage", "n_clicks_timestamp"),
@@ -488,13 +503,31 @@ def update_figures(derived_virtual_selected_rows):
     # the component.
     if derived_virtual_selected_rows is None:
         derived_virtual_selected_rows = []
+    tmp = df
+    tmp = tmp.set_index(['Hospital'])
 
-    dff = df
+    hospitals = tmp.groupby('Hospital')
+    # cases = []
+    # for k in hospitals.groups:
+    #     cases.append(len(hospitals.groups[k]))
+    print(hospitals)
+
+    dff = [
+        {
+            "Hospital": "{}".format(k),
+            "cases": len(hospitals.groups[k]),
+            'lat': tmp.loc[k]['lat'].values[0],
+            'lon': tmp.loc[k]['lon'].values[0]
+        } for k in hospitals.groups
+    ]
+
+    print(dff)
+    dfs = pd.DataFrame(dff)
 
     mapbox_access_token = "pk.eyJ1Ijoic3RlZmFub2NhcmRpbmFsZSIsImEiOiJjazg3aWUwengwZmg1M2VwcnJzc3pnNmNkIn0.W_t9-PNkeag5yie239nI4Q"
 
     # Generate a list for hover text display
-    # textList = []
+    #textList = dff['Hospital']
     # for area, region in zip(dfs[keyList[0]]['Province/State'], dfs[keyList[0]]['Country/Region']):
     #
     #     if type(area) is str:
@@ -506,20 +539,22 @@ def update_figures(derived_virtual_selected_rows):
     #         textList.append(region)
 
     fig2 = go.Figure(go.Scattermapbox(
-        lat=dff['lat'],
-        lon=dff['lon'],
+        lat=dfs['lat'],
+        lon=dfs['lon'],
         mode='markers',
         marker=go.scattermapbox.Marker(
-            color='#ca261d'),
-        #     #size=dfs[keyList[0]]['Confirmed'].tolist(),
-        #     sizemin=4,
-        #     sizemode='area',
-        #     sizeref=2. * max(dff[keyList[0]]['Confirmed'].tolist()) / (150. ** 2),
-        # ),
-        #text=textList,
-        hovertemplate="<b>%{text}</b><br><br>" +
+            color='#ca261d',
+            size=dfs['cases'],
+            sizemin=4,
+            sizemode='area',
+            sizeref=2. * max(dfs['cases']) / (50. ** 2),
+        ),
+        #text="Hospital:",
+        visible=None,
+        hovertext=dfs['Hospital'],
+        hovertemplate="<b>Hospital:</b><br>" +
                       "%{hovertext}<br>" +
-                      "<extra></extra>")
+                        "<extra></extra>")
     )
     fig2.update_layout(
         plot_bgcolor='#151920',
@@ -527,19 +562,18 @@ def update_figures(derived_virtual_selected_rows):
         margin=go.layout.Margin(l=10, r=10, b=10, t=0, pad=40),
         hovermode='closest',
         transition={'duration': 1000},
+
         mapbox=go.layout.Mapbox(
             accesstoken=mapbox_access_token,
             style="light",
             # The direction you're facing, measured clockwise as an angle from true north on a compass
             bearing=0,
             center=go.layout.mapbox.Center(
-                lat=55.6659557 if len(derived_virtual_selected_rows) == 0 else dff['lat'][
-                    derived_virtual_selected_rows[0]],
-                lon=12.5898586 if len(derived_virtual_selected_rows) == 0 else dff['lon'][
-                    derived_virtual_selected_rows[0]]
+                lat=56.1910303,
+                lon=10.3666312,
             ),
             pitch=0,
-            zoom=5 if len(derived_virtual_selected_rows) == 0 else 4
+            zoom=6.5 if len(derived_virtual_selected_rows) == 0 else 6.5
         )
     )
 
