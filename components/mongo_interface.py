@@ -28,9 +28,7 @@ def close_connection():
     if CONNECTION is not None:
         CONNECTION.close()
 
-
 atexit.register(close_connection)
-
 
 def get_connection():
     global CONNECTION

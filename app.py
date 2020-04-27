@@ -1,10 +1,12 @@
 import os
+import io
+import base64
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_bootstrap_components as dbc
 import components.admin as admin
-from dash.dependencies import Input, Output, State
+from dash.dependencies import Input, Output, State, ClientsideFunction
 from components import html_components as hc
 from components import mongo_interface as mongo_interface
 from flask_caching import Cache
@@ -13,18 +15,20 @@ from components.sample_report import SAMPLE_PAGESIZE, sample_report, children_sa
 from components.aggregate_report import aggregate_report, update_aggregate_fig, aggregate_species_dropdown
 import components.global_vars as global_vars
 from dash.exceptions import PreventUpdate
+import dash_table
 
+import react_phylo
+import newick
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-import datetime
-from datetime import datetime as dt
-import pathlib
+
 import keys
 
 os.chdir('/Users/stefanocardinale/Documents/SSI/DATABASES/')
 
 df = pd.read_csv('map_testing_data.csv', sep=";")
+
 
 def samples_list(active, collection_name=None):
     links = [
@@ -70,12 +74,15 @@ def samples_list(active, collection_name=None):
 
 external_scripts = [
     'https://kit.fontawesome.com/24170a81ff.js',
+    '/Users/stefanocardinale/Documents/SSI/git.repositories3/phylocanvas/phylocanvas/dev/index.js'
 ]
 
 app = dash.Dash(__name__,
     external_stylesheets=[dbc.themes.BOOTSTRAP],
-    external_scripts=external_scripts
+    external_scripts=external_scripts,
+ #   assets_external_path=['/Users/stefanocardinale/Documents/SSI/git.repositories3/phylocanvas/phylocanvas/dev/data']
 )
+#app.scripts.config.serve_locally = False
 
 app.title = "BeONE"
 app.config["suppress_callback_exceptions"] = True
@@ -110,15 +117,14 @@ app.layout = html.Div(
                 ], style={'padding-left': '750px', 'padding-bottom': '20px'}),
                 html.Nav([
                     dcc.Tabs(
-                        id="control-tabs",
-                        value="isolates-tab",
+                        id='control-tabs',
+                        value='isolates-tab',
                         children=[
-                            dcc.Tab(className='circos-tab', label="Surveys", value="survey-tab"),
-                            dcc.Tab(className='circos-tab', label="Analyses", value="analyses-tab"),
-                            dcc.Tab(className='circos-tab', label="Reports", value="reports-tab"),
-                            dcc.Tab(className='circos-tab', label="Isolates", value="isolates-tab"),
+                            dcc.Tab(className='circos-tab', label='Surveys', value='survey-tab'),
+                            dcc.Tab(className='circos-tab', label='Analyses', value='analyses-tab'),
+                            dcc.Tab(className='circos-tab', label='Reports', value='reports-tab'),
+                            dcc.Tab(className='circos-tab', label='Isolates', value='isolates-tab'),
                         ],
-                        className='circos-control-tabs six columns'
                     ),
                 ], className='navbar navbar-expand topbar'),
 
@@ -135,10 +141,11 @@ app.layout = html.Div(
                     html.Div(id='tab-content', style={"padding-top":"10px"}),
                 ], className='container-fluid', role='main')
             ])
-        ], id='content-wrapper', className="d-flex flex-column",
+        ], id='content-wrapper', className="d-flex flex-column", style={'margin-bottom': '3%', 'margin-top': '1%', 'margin-left': '1%', 'margin-right': '1%'},
         )
     ],
 )
+
 
 @app.callback(
     [Output('datatable-ssi_stamper', "selected_rows")],
@@ -306,11 +313,25 @@ def render_content(tab, n_clicks, selected_run, selected_samples, project_sample
                 columns_names = global_vars.COLUMNS
 
                 return hc.html_tab_analyses(samples, columns_names)
+        elif section == "sample-report":
+            view = html.Div([
+                    html.Div([
+                        dcc.Upload(id='upload-data', children=[
+                            dbc.Button('Upload Newick File', n_clicks=0, size='sm')])
+                    ], style={'padding-bottom': '5px'}),
+                    html.Div(id='output-data-upload'),
+                    react_phylo.Phylo(
+                    id='output',
+                    data='',
+                    NewickString='',
+                        ),
+            ])
+            return [view]
         else:
             raise PreventUpdate
 
     elif tab == 'reports-tab':
-        return hc.html_tab_reports()
+        raise PreventUpdate
 
     elif tab == 'isolates-tab':
 
@@ -344,29 +365,12 @@ def render_content(tab, n_clicks, selected_run, selected_samples, project_sample
 
             view = sample_report(data)
 
-        # elif section == "pipeline-report":
-        #     view = pipeline_report(sample_store)
-        # elif section == "resequence-report":
-        #     samples_panel = "d-none"
-        #     view = resequence_report(collection_name)
-        # elif section == "link-to-files":
-        #     view = link_to_files(sample_store)
+
         elif section == "aggregate":
             view = aggregate_report(selected_samples)
         else:
            # samples_panel = "d-none"
             view = "Not found"
-
-        # if collection_view:
-        #     collection_selector_list = "row"
-        #     run_list = "d-none"
-        #     collections_nav += " active"
-        # elif section == "resequence-report":
-        #     collection_selector_list = "row"
-        #     run_list = "d-none"
-        # else:
-        #     collection_selector_list = "row d-none"
-        #     run_list = ""
 
         return [view]
 
@@ -499,6 +503,18 @@ def topbar_toggle(n, is_open):
     else:
         raise PreventUpdate
 
+
+@app.callback(
+    Output('output', 'NewickString'),
+    [Input('upload-data', 'contents')]
+)
+def display_output(contents):
+    if contents is not None:
+        content_type, content_string = contents.split(',')
+        decoded = base64.b64decode(content_string)
+        out = decoded.decode('utf-8', 'strict')
+
+        return out
 
 @app.callback(
     Output('datatable-interact-map', 'figure'),
