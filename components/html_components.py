@@ -9,7 +9,8 @@ import numpy as np
 import pandas as pd
 
 import components.global_vars as global_vars
-import components.import_data as import_data
+import bifrost.bifrost_import_data as import_data
+from components.import_data import get_db_list, get_species_list, filter_all
 
 KEY = "BIFROST_DB_KEY"
 
@@ -81,7 +82,7 @@ def html_div_main():
 
 def dropdown_db_options():
     print('dropdown_db_options')
-    db_list = import_data.get_db_list()
+    db_list = get_db_list()
     # db_options = [
     #     {
     #         "label": "{}".format(i),
@@ -103,7 +104,7 @@ def dropdown_run_options():
 
 def dropdown_species_options(selected_run):
     print("dropdown_species_options")
-    species_list = import_data.get_species_list(selected_run)
+    species_list = get_species_list(selected_run)
 
     species_options = []
     for item in species_list:
@@ -173,7 +174,7 @@ def html_topbar():
                             className="m-0 text-primary"),
                     dcc.Dropdown(
                         id="species-list",
-                        options=import_data.get_species_list(),
+                        options=get_species_list(),
                         value=None
                     ),
                 ], className='pretty_container two columns',
@@ -296,8 +297,7 @@ def html_tab_bifrost(samples, column_names):
 
     ids = [sample['_id'] for sample in samples]
 
-    query = import_data.filter_all(sample_ids=ids,
-                                     projection={'sample_sheet': 1})
+    query = filter_all(sample_ids=ids, projection={'sample_sheet': 1})
 
 
     if "_id" in query:
