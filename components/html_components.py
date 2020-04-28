@@ -160,7 +160,7 @@ def html_topbar():
                                                                      'zIndex': 999}),
                 html.Div([
                     html.H6("Select NGS run",
-                            className="m-0 text-primary"),
+                            className="text-primary"),
                     dcc.Dropdown(
                         id="run-list",
                         # options=dropdowns_options()[0],
@@ -171,7 +171,7 @@ def html_topbar():
                                                                      'zIndex': 999}),
                 html.Div([
                     html.H6("Species",
-                            className="m-0 text-primary"),
+                            className="text-primary"),
                     dcc.Dropdown(
                         id="species-list",
                         options=get_species_list(),
@@ -305,8 +305,8 @@ def html_tab_bifrost(samples, column_names):
 
     data = query.to_dict("rows")
 
-    print(data)
-    print(samples)
+    #print(data)
+    #print(samples)
     view = html.Div([
 
         html.Div([
@@ -320,7 +320,7 @@ def html_tab_bifrost(samples, column_names):
                                                 'padding-bottom': '5px'}),
         html.Div([
             html.Div([
-                dbc.Button("Load to Survey",
+                dbc.Button("Load to Analyses",
                            id='upload-samples',
                            n_clicks=0,
                            size='sm')
@@ -497,7 +497,7 @@ def generate_table(tests_df):
 
 def table_main(data, column_names):
     print("table_main")
-    #print(data)
+    print(data)
     # if columns is None:
     #     columns = global_vars.COLUMNS
 

@@ -28,6 +28,16 @@ def get_db_list():
     print(db_options)
     return db_options
 
+def get_run_list():
+    connection = get_connection()
+    db = connection['bifrost_upgrade_test']
+    # Fastest.
+    runs = list(db.runs.find( {},#{"type": "routine"}, #Leave in routine
+                                {"name": 1,
+                                "_id": 0,
+                                "samples": 1}).sort([['metadata.created_at', pymongo.DESCENDING]]))
+    return runs
+
 def get_species_list(run_name=None):
     connection = get_connection()
 

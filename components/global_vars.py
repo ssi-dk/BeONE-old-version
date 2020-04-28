@@ -54,27 +54,27 @@ QC_COLUMNS = [
 ]
 
 COLUMNS = [
-    # {
-    #     "name": "Run",
-    #     "id": "sample_sheet.run_name"
-    # },
+    {
+        "name": "Run",
+        "id": "sample_sheet.run_name"
+    },
     {
         "name": "Name",
-        "id": "name"
+        "id": "sample_sheet.sample_name"
     },
 
     {
         "name": "Provided_Species",
-        "id": "properties.provided_species"
+        "id": "sample_sheet.provided_species"
     },
-    {
-        "name": "Detected Species",
-        "id": "properties.detected_species"
-    },
+    # {
+    #     "name": "Detected Species",
+    #     "id": "properties.detected_species"
+    # },
 
     {
-        "name": "Date",
-        "id": "stamps.ssi_stamper.date"
+        "name": "Run Date",
+        "id": "sample_sheet.SequenceRunDate"
     }
 ]
 

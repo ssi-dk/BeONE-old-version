@@ -1,5 +1,4 @@
 import os
-import io
 import base64
 import dash
 import dash_core_components as dcc
@@ -7,17 +6,15 @@ import dash_html_components as html
 import dash_bootstrap_components as dbc
 from flask_caching import Cache
 import components.admin as admin
-from dash.dependencies import Input, Output, State, ClientsideFunction
+from dash.dependencies import Input, Output, State
 
-from bifrost import bifrost_mongo_interface as mongo_interface
 from components.import_data import get_species_list, filter_all
 
 from components import html_components as hc
 from components.sample_report import SAMPLE_PAGESIZE, sample_report, children_sample_list_report, samples_next_page
-from components.aggregate_report import aggregate_report, update_aggregate_fig, aggregate_species_dropdown
+from bifrost.aggregate_report import aggregate_report, update_aggregate_fig, aggregate_species_dropdown
 import components.global_vars as global_vars
 from dash.exceptions import PreventUpdate
-import dash_table
 
 import react_phylo
 import pandas as pd
@@ -126,7 +123,7 @@ app.layout = html.Div(
                             dcc.Tab(className='circos-tab', label='Isolates', value='isolates-tab'),
                         ],
                     ),
-                ], className='navbar navbar-expand topbar'),
+                ], className='navbar navbar-expand topbar', style={'margin-left': '200px', "fontSize": "2rem"}),
 
                 html.Main([
                         html.Div([
@@ -210,7 +207,7 @@ def upload_runs(n_clicks, n_clicks2, selected_run, selected_specie):
         return ['', selected_specie, samples, species_options]
 
     elif n_clicks != 0 and n_clicks2 == 0:
-        species_options = mongo_interface.get_species_list(selected_run)
+        species_options = get_species_list(selected_run)
         samples = filter_all(run_names=selected_run, projection={'_id': 1, 'name': 1})
         #samples = hc.generate_table(samples)
         if "_id" in samples:
@@ -219,11 +216,13 @@ def upload_runs(n_clicks, n_clicks2, selected_run, selected_specie):
         samples = samples.to_dict("rows")
 
         print("The samples are: {}".format(samples))
+        print("The species list is: {}".format(species_options))
+        print("The run name is: {}".format(selected_run))
         return [selected_run, [], samples, species_options]
 
     elif n_clicks != 0 and n_clicks2 != 0:
-        species_options = mongo_interface.get_species_list(selected_run)
-        samples = filter_all(species=[selected_specie], run_names=selected_run)
+        species_options = get_species_list(selected_run)
+        samples = filter_all(species=[selected_specie], run_names=selected_run, projection={'_id': 1, 'name': 1})
         #samples = hc.generate_table(samples)
 
         if "_id" in samples:
@@ -244,9 +243,6 @@ def upload_runs(n_clicks, n_clicks2, selected_run, selected_specie):
 )
 def update_selected_samples(n_clicks, rows, selected_rows):
     print("update_selected_samples")
-    #print(prev_sample_store)
-    # if selected_run is None:
-    #     selected_run = 'stefano_playground'
 
     if n_clicks == 0:
         raise PreventUpdate
@@ -257,7 +253,7 @@ def update_selected_samples(n_clicks, rows, selected_rows):
         samples = data.to_dict('rows')
 
     print("the number of selected samples is: {}".format(len(samples)))
-    #print("selected rows are {}").format(selected_rows)
+
     return [samples]
 
 
@@ -311,6 +307,7 @@ def render_content(tab, n_clicks, selected_run, selected_samples, project_sample
             else:
                 samples = project_samples
                 print("the number of project samples is {}".format(len(samples)))
+                print(project_samples)
                 columns_names = global_vars.COLUMNS
 
                 return hc.html_tab_analyses(samples, columns_names)

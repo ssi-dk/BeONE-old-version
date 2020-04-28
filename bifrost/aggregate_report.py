@@ -5,7 +5,7 @@ import plotly.graph_objs as go
 from plotly import tools
 import pandas as pd
 import numpy as np
-import components.import_data as import_data
+import bifrost.bifrost_import_data as import_data
 import components.global_vars as global_vars
 
 def aggregate_report(data):
@@ -98,6 +98,7 @@ def aggregate_species_dropdown(sample_store, plot_species, selected_species):
     return [selected_species, species_list_options]
 
 def update_aggregate_fig(selected_species, sample_store, plot_species_source):
+    print("update_aggregate_fig")
     if len(sample_store) == 0:
         return {"data": []}, {"data": []}
     plot_values = global_vars.plot_values
@@ -114,7 +115,7 @@ def update_aggregate_fig(selected_species, sample_store, plot_species_source):
     plot_df = import_data.filter_all(
         sample_ids=sample_ids)
 
-
+    print("The plot data are: {}".format(plot_df))
     if "properties.sample_info.summary.provided_species" not in plot_df:
         plot_df["properties.sample_info.summary.provided_species"] = np.nan
 
@@ -213,7 +214,7 @@ def update_aggregate_fig(selected_species, sample_store, plot_species_source):
     fig["layout"]["yaxis7"].update(domain=(0.03, 0.125))
 
     species_size = import_data.get_species_QC_values(selected_species)
-
+    print("Species_size is: {}".format(species_size))
 
     annotations = [
         {
