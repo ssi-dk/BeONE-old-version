@@ -52,6 +52,7 @@
   margin: 10px;
   padding: 5px;
   position: relative;
+  font-size: 1em;
   box-shadow: 2px 2px 2px lightgrey;
 }
 /* For devices larger than 400px */
@@ -67,10 +68,10 @@
     width: 80%; }
   .column,
   .columns {
-    margin-left: 2%; }
+    margin-left: 1%; }
   .column:first-child,
   .columns:first-child {
-    margin-left: 1%; }
+    margin-left: 0.5%; }
 
   .one.column,
   .one.columns                    { width: 4.66666666667%; }
@@ -129,7 +130,7 @@
     margin-right: 0px;
     background-color: #8cd2fa !important;
     font-size: 16pt;
-    font-weight: bold;
+    font-weight: 400;
     width: 800px !important;
 }
 
@@ -149,9 +150,9 @@
 }
 
 .circos-control-tabs .tab--selected {
-    border-top: solid 5px #fa0202 !important;
+    border-top: solid 5px #a80808 !important;
     box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2), 0 3px 10px 0 rgba(0, 0, 0, 0.19);
-    color: #fa0202 !important;
+    color: #a80808 !important;
 }
 
 
@@ -190,7 +191,7 @@ are based on 10px sizing. So basically 1.5rem = 15px :) */
 html {
   font-size: 62.5%; }
 body {
-  font-size: 1.5em; /* currently ems cause chrome bug misinterpreting rems on body element */
+  font-size: 1.3em; /* currently ems cause chrome bug misinterpreting rems on body element */
   line-height: 1.6;
   font-weight: 400;
   font-family: "Open Sans", "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -308,7 +309,7 @@ input[type="password"],
 textarea,
 select {
   height: 38px;
-  padding: 6px 10px; /* The 6px vertically centers text on FF, ignored by Webkit */
+  padding: 3px 5px; /* The 6px vertically centers text on FF, ignored by Webkit */
   background-color: #fff;
   border: 1px solid #D1D1D1;
   border-radius: 4px;

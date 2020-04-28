@@ -116,14 +116,15 @@ app.layout = html.Div(
                     dcc.Tabs(
                         id='control-tabs',
                         value='isolates-tab',
+                        className='circos-control-tabs',
                         children=[
                             dcc.Tab(className='circos-tab', label='Surveys', value='survey-tab'),
                             dcc.Tab(className='circos-tab', label='Analyses', value='analyses-tab'),
                             dcc.Tab(className='circos-tab', label='Reports', value='reports-tab'),
                             dcc.Tab(className='circos-tab', label='Isolates', value='isolates-tab'),
-                        ],
+                        ], style={'width': '700px'}
                     ),
-                ], className='navbar navbar-expand topbar', style={'margin-left': '200px', "fontSize": "2rem"}),
+                ], className='navbar topbar', style={'margin-left': '200px', "fontSize": "2rem"}),
 
                 html.Main([
                         html.Div([
