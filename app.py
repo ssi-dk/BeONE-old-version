@@ -5,13 +5,15 @@ import dash_core_components as dcc
 import dash_html_components as html
 import dash_bootstrap_components as dbc
 from flask_caching import Cache
-import components.admin as admin
+import bifrost.admin as admin
 from dash.dependencies import Input, Output, State
+from datetime import datetime as dt
+import re
 
 from components.import_data import get_species_list, filter_all
 
 from components import html_components as hc
-from components.sample_report import SAMPLE_PAGESIZE, sample_report, children_sample_list_report, samples_next_page
+from bifrost.sample_report import SAMPLE_PAGESIZE, sample_report, children_sample_list_report, samples_next_page
 from bifrost.aggregate_report import aggregate_report, update_aggregate_fig, aggregate_species_dropdown
 import components.global_vars as global_vars
 from dash.exceptions import PreventUpdate
@@ -19,13 +21,11 @@ from dash.exceptions import PreventUpdate
 import react_phylo
 import pandas as pd
 import plotly.graph_objects as go
-
 import keys
 
 os.chdir('/Users/stefanocardinale/Documents/SSI/DATABASES/')
 
 df = pd.read_csv('map_testing_data.csv', sep=";")
-
 
 def samples_list(active, collection_name=None):
     links = [
@@ -184,6 +184,7 @@ def update_runs_dropdown(datab):
      Input('species-list', 'value')]
 )
 def upload_runs(n_clicks, n_clicks2, selected_run, selected_specie):
+
     if n_clicks == 0 and n_clicks2 == 0:
         species_options = get_species_list()
 
@@ -260,15 +261,26 @@ def update_selected_samples(n_clicks, rows, selected_rows):
 
 @app.callback(
     [Output('tab-content', 'children')],
-    [Input('control-tabs', 'value'),
+    [Input('date-picker-select', 'start_date'),
+     Input('date-picker-select', 'end_date'),
+     Input('control-tabs', 'value'),
      Input('run-selector', 'n_clicks'),
      Input('run-list', 'value'),
      Input('sample-store', 'data'),
      Input('project-store', 'data')],
      [State("url", "pathname")]
 )
-def render_content(tab, n_clicks, selected_run, selected_samples, project_samples, pathname):
+def render_content(start_date, end_date, tab, n_clicks, selected_run, selected_samples, project_samples, pathname):
     print('render_content')
+    if start_date is not None:
+        start_date = dt.strptime(re.split('T| ', start_date)[0], '%Y-%m-%d')
+        #start_date_string = start_date.strftime('%Y-%m-%d')
+        print(start_date)
+    if end_date is not None:
+        end_date = dt.strptime(re.split('T| ', end_date)[0], '%Y-%m-%d')
+        end_date_string = end_date.strftime('%Y-%m-%d')
+        #print(start_date)
+
     if pathname is None or pathname == "/":
         pathname = "/"
     path = pathname.split("/")
@@ -347,7 +359,7 @@ def render_content(tab, n_clicks, selected_run, selected_samples, project_sample
                 samples = selected_samples
 
             print("the number of samples is: {}".format(len(samples)))
-            view = hc.html_tab_bifrost(samples, columns_names)
+            view = hc.html_tab_bifrost(samples, start_date, end_date, columns_names)
 
         elif section == "sample-report":
 

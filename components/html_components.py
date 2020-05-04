@@ -150,11 +150,12 @@ def html_topbar():
                     html.H6("Select Time Range", className="m-0 text-primary", style={'padding-bottom':'5px'}),
                     dcc.DatePickerRange(
                         id="date-picker-select",
-                        start_date=dt(2014, 1, 1),
-                        end_date=dt(2014, 1, 15),
+                        display_format='DD MMMM, Y',
+                        start_date=dt(2018, 1, 1),
+                        end_date=dt.today(),
                         min_date_allowed=dt(2014, 1, 1),
-                        max_date_allowed=dt(2014, 12, 31),
-                        initial_visible_month=dt(2014, 1, 1),
+                        max_date_allowed=dt.today(),
+                        initial_visible_month=dt(2018, 1, 1),
                     )
                 ], className='pretty_container three columns', style={'border': '1px DarkGrey solid',
                                                                      'zIndex': 999}),
@@ -209,7 +210,6 @@ def html_topbar():
     ], id='topbar-collapse', is_open=[True])
 
     return collapse
-
 
 def html_div_filter():
 
@@ -293,7 +293,7 @@ def html_div_filter():
         )
     ])
 
-def html_tab_bifrost(samples, column_names):
+def html_tab_bifrost(samples, start_date, end_date, column_names):
 
     ids = [sample['_id'] for sample in samples]
 
@@ -302,10 +302,13 @@ def html_tab_bifrost(samples, column_names):
 
     if "_id" in query:
         query["_id"] = query["_id"].astype(str)
+    #print(dt.strptime(query['sample_sheet.SequenceRunDate'][0], '%Y-%m-%d'))
+    query['sample_sheet.SequenceRunDate'] = pd.to_datetime(query['sample_sheet.SequenceRunDate'], errors='coerce')
+    query = query[query['sample_sheet.SequenceRunDate'].between(start_date, end_date)]
 
     data = query.to_dict("rows")
 
-    #print(data)
+    print("The isolate data are: {}".format(query['sample_sheet.SequenceRunDate']))
     #print(samples)
     view = html.Div([
 
@@ -596,7 +599,6 @@ def metadata_table():
             id="metadata-table")
 
     return table
-
 
 def geomap():
     os.chdir('/Users/stefanocardinale/Documents/SSI/DATABASES/')
