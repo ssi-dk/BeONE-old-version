@@ -9,10 +9,14 @@ import bifrost.admin as admin
 from dash.dependencies import Input, Output, State
 from datetime import datetime as dt
 import re
+import io
+import bifrostapi
 
-from components.import_data import get_species_list, filter_all
+from components.import_data import *
 
 from components import html_components as hc
+from components import mongo_interface
+from bifrost import bifrost_mongo_interface
 from bifrost.sample_report import SAMPLE_PAGESIZE, sample_report, children_sample_list_report, samples_next_page
 from bifrost.aggregate_report import aggregate_report, update_aggregate_fig, aggregate_species_dropdown
 import components.global_vars as global_vars
@@ -25,7 +29,7 @@ import keys
 
 os.chdir('/Users/stefanocardinale/Documents/SSI/DATABASES/')
 
-df = pd.read_csv('map_testing_data.csv', sep=";")
+data = pd.read_csv('map_testing_data.csv', sep=";")
 
 def samples_list(active, collection_name=None):
     links = [
@@ -69,6 +73,28 @@ def samples_list(active, collection_name=None):
             ))
     return link_list
 
+def parse_contents(contents, filename):
+    content_type, content_string = contents.split(',')
+
+    decoded = base64.b64decode(content_string)
+    try:
+        if 'csv' in filename:
+            # Assume that the user uploaded a CSV file
+            df = pd.read_csv(
+                io.StringIO(decoded.decode('utf-8')))
+        elif 'xls' in filename:
+            # Assume that the user uploaded an excel file
+            df = pd.read_excel(io.BytesIO(decoded))
+    except Exception as e:
+        print(e)
+        return html.Div([
+            'There was an error processing this file.'
+        ])
+    data = df.to_dict('records')
+    columns = [{'name': i, 'id': i} for i in df.columns]
+
+    return [data, columns]
+
 external_scripts = [
     'https://kit.fontawesome.com/24170a81ff.js',
     '/Users/stefanocardinale/Documents/SSI/git.repositories3/phylocanvas/phylocanvas/dev/index.js'
@@ -97,7 +123,8 @@ app.layout = html.Div(
     children=[
         dcc.Location(id="url", refresh=False),
         dcc.Store(id="sample-store", data=[], storage_type='session'),
-        dcc.Store(id="project-store", data=[], storage_type='session'),
+        dcc.Store(id="analysis-store", data=[], storage_type='session'),
+        dcc.Store(id="survey-store", data=[], storage_type='session'),
         dcc.Store(id="param-store", data={}),
         dcc.Store(id="selected-run", data=None),
         dcc.Store(id="selected-species", data=None),
@@ -164,14 +191,11 @@ def select_all(n_clicks, data):
 )
 def update_runs_dropdown(datab):
     print("update_runs_dropdown")
-    # if datab is None:
-    #     datab = 'bifrost_upgrade_test'
 
     run_options = hc.dropdown_run_options()[0]
     print(run_options)
 
     return [run_options]
-
 
 @app.callback(
     [Output('selected-run', 'data'),
@@ -238,7 +262,7 @@ def upload_runs(n_clicks, n_clicks2, selected_run, selected_specie):
 
 
 @app.callback(
-    [Output('project-store', 'data')],
+    [Output('analysis-store', 'data')],
     [Input('upload-samples', 'n_clicks'),
      Input('datatable-ssi_stamper', 'derived_virtual_data'),
      Input('datatable-ssi_stamper', 'derived_virtual_selected_rows')]
@@ -258,6 +282,58 @@ def update_selected_samples(n_clicks, rows, selected_rows):
 
     return [samples]
 
+@app.callback(
+    [Output('survey-store', 'data'),
+     Output('save-survey', 'n_clicks')],
+    [Input('upload-survey-button', 'n_clicks'),
+     Input('metadata-table', 'derived_virtual_data'),
+     Input('metadata-table', 'derived_virtual_selected_rows')]
+)
+def store_survey(n_clicks, rows, selected_rows):
+    print("store_survey")
+    if n_clicks == 0:
+        raise PreventUpdate
+
+    else:
+        data = pd.DataFrame(rows)
+        data = data.take(selected_rows)
+        survey = data.to_dict('rows')
+
+        return [survey, 0]
+
+@app.callback(
+    [Output('metadata-table', 'data'),
+     Output('metadata-table', 'columns')],
+    [Input('load-survey-from-db', 'n_clicks'),
+     Input('upload-survey-button', 'n_clicks'),
+     Input('surveys-list', 'value'),
+     Input('upload-survey', 'contents')],
+    [State('upload-survey', 'filename')]
+)
+def load_survey(n_clicks, n_clicks2, selected_survey, content, filename):
+    print("load_survey")
+    if n_clicks == 0 and n_clicks2 == 0:
+        raise PreventUpdate
+
+    elif n_clicks == 1 and n_clicks2 == 0:
+        if selected_survey is None:
+            raise PreventUpdate
+        else:
+            print(str(selected_survey))
+            df = get_survey(selected_survey)
+            df = df[0]['cases']
+            columns = [{"name": k, "id": k} for k, v in df[0].items()]
+            print(df)
+            print(columns)
+
+            return [df, columns]
+
+    elif n_clicks == 0 and n_clicks2 == 1:
+        if content is not None:
+            df, columns = parse_contents(content, filename)
+            print(df)
+
+            return df, columns
 
 @app.callback(
     [Output('tab-content', 'children')],
@@ -267,7 +343,7 @@ def update_selected_samples(n_clicks, rows, selected_rows):
      Input('run-selector', 'n_clicks'),
      Input('run-list', 'value'),
      Input('sample-store', 'data'),
-     Input('project-store', 'data')],
+     Input('analysis-store', 'data')],
      [State("url", "pathname")]
 )
 def render_content(start_date, end_date, tab, n_clicks, selected_run, selected_samples, project_samples, pathname):
@@ -299,19 +375,8 @@ def render_content(start_date, end_date, tab, n_clicks, selected_run, selected_s
         section = path[1]
 
     if tab == 'survey-tab':
-        if section == "":
-            if project_samples is None:
-                raise PreventUpdate
-            else:
-                samples = project_samples
-                print("the number of project samples is {}".format(len(samples)))
-                columns_names = global_vars.COLUMNS
+        return hc.html_tab_surveys(section)
 
-                return hc.html_tab_surveys(samples, columns_names)
-
-        elif section == "sample-report":
-
-            return hc.html_tab_surveys()
 
     elif tab == 'analyses-tab':
         if section == "":
@@ -542,7 +607,7 @@ def update_figures(derived_virtual_selected_rows):
     # the component.
     if derived_virtual_selected_rows is None:
         derived_virtual_selected_rows = []
-    tmp = df
+    tmp = data
     tmp = tmp.set_index(['Hospital'])
 
     hospitals = tmp.groupby('Hospital')
@@ -617,6 +682,25 @@ def update_figures(derived_virtual_selected_rows):
     )
 
     return fig2
+
+@app.callback(
+    Output('confirm', 'displayed'),
+    [Input('save-survey', 'n_clicks'),
+     Input('survey-store', 'data')]
+)
+def output_survey_toDB(n_clicks, cases):
+    print("Output_survey_toDB")
+    if n_clicks == 0:
+        raise PreventUpdate
+
+    else:
+        print("The n. of cases to store is: {}".format(len(cases)))
+        df = {'cases': cases}
+        print(df)
+
+        hc.save_survey(df)
+
+        return True
 
 # Run the server
 if __name__ == "__main__":

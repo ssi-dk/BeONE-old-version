@@ -20,6 +20,12 @@ def get_db_list():
 def get_species_list(run_name=None):
     return mongo_interface.get_species_list(run_name)
 
+def get_survey_list():
+    return mongo_interface.get_survey_list()
+
+def get_survey(selected_survey):
+    return mongo_interface.get_survey(selected_survey)
+
 def get_filtered_samples(specie):
     return mongo_interface.get_filtered_samples(specie)
 

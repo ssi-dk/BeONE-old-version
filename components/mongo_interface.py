@@ -3,8 +3,8 @@ import os
 from datetime import datetime
 import re
 from bson.objectid import ObjectId
-import atexit
-import math
+from bson.son import SON
+import bifrostapi
 
 
 def get_connection():
@@ -27,6 +27,19 @@ def get_db_list():
     ]
     print(db_options)
     return db_options
+
+def get_survey_list():
+    connection = get_connection()
+    db = connection['bifrost_upgrade_test']
+    # Fastest.
+    surveys = list(db.surveys.find({},
+                        {"_id": 1}).sort([['metadata.created_at', pymongo.DESCENDING]]))
+
+    survey_options = [
+        {"label": "{}".format(i['_id']),
+         "value": "{}".format(i['_id'])} for i in surveys]
+
+    return survey_options
 
 def get_run_list():
     connection = get_connection()
@@ -167,31 +180,12 @@ def get_sample_component(sample_names):
 
     return list(db.sample_components.find({"sample.name": {"$in": sample_names}}, {"component": 1, "sample": 1, "summary": 1}))
 
-def save_to_project(data_dict):
+def get_survey(selected_survey):
+    connection = pymongo.MongoClient()
+    db = connection["bifrost_upgrade_test"]
 
-    connection = get_connection()
-    db = connection['bifrost_upgrade_test']
+    return list(db.surveys.find({"_id": ObjectId(selected_survey)}))
 
-    projects = db.projects
-
-
-    if "_id" in data_dict:
-        data_dict = projects.find_one_and_update(
-            filter={"_id": data_dict["_id"]},
-            update={"$set": data_dict},
-            # return new doc if one is upserted
-            return_document=pymongo.ReturnDocument.AFTER,
-            upsert=True  # This might change in the future # insert the document if it does not exist
-        )
-    else:
-        data_dict = projects.find_one_and_update(
-            filter=data_dict,
-            update={"$setOnInsert": data_dict},
-            # return new doc if one is upserted
-            return_document=pymongo.ReturnDocument.AFTER,
-            upsert=True  # insert the document if it does not exist
-        )
-    return data_dict
 
 def filter_qc(qc_list):
     if qc_list is None or len(qc_list) == 0:

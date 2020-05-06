@@ -1,6 +1,7 @@
 from datetime import datetime as dt
 import os
-
+import bifrostapi
+import pymongo
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
@@ -10,9 +11,10 @@ import pandas as pd
 
 import components.global_vars as global_vars
 import bifrost.bifrost_import_data as import_data
-from components.import_data import get_db_list, get_species_list, filter_all
+from components.import_data import get_db_list, get_species_list, filter_all, get_survey_list
 
-KEY = "BIFROST_DB_KEY"
+
+COLUMNS = global_vars.COLUMNS
 
 def samples_list(active, collection_name=None):
     links = [
@@ -340,10 +342,60 @@ def html_tab_bifrost(samples, start_date, end_date, column_names):
                                                            'height': '1000px'})
     return [view]
 
-def html_tab_surveys(samples=None,column_names=None):
+def html_tab_surveys(section):
 
-    if samples is None:
+    if section == "":
+        view = html.Div([
+            html.Div([
+                html.Div([
+                    dcc.Dropdown(
+                        id="surveys-list",
+                        options=get_survey_list(),
+                        value=None),
+                ]),
+            ], className='two columns', style={'display': 'inline-block',
+                                        'padding-bottom': '5px',
+                                        'padding-left': '5px'}),
+        html.Div([
+            html.Div([
+                dbc.Button("Load from DB",
+                           id='load-survey-from-db',
+                           n_clicks=0,
+                           size='sm')
+            ]),
+        ], className='col-auto mr-auto', style={'display': 'inline-block',
+                                                'padding-bottom': '5px',
+                                                'padding-left': '5px'}),
+        html.Div([
+            html.Div([
+                dcc.Upload(id='upload-survey', children=[
+                    dbc.Button('Upload from file', id='upload-survey-button', n_clicks=0, size='sm')
+                ], multiple=False)
+            ]),
+        ], className='col-auto mr-auto', style={'display': 'inline-block',
+                                                'padding-bottom': '5px'}),
+        html.Div([
+            html.Div([
+                dbc.Button("Save to DB",
+                           id='save-survey',
+                           n_clicks=0,
+                           size='sm')
+            ])
+        ], className='col-auto mr-auto', style={'display': 'inline-block',
+                                                'padding-bottom': '5px'}),
+            html.Div([
+                dcc.ConfirmDialog(
+                    id='confirm',
+                    message='You have saved the survey',
+                ),
+            ]),
+            metadata_table(),
+        ], className='pretty_container eleven columns', style={'border': '1px DarkGrey solid',
+                                                               'padding-bottom': '5px',
+                                                               'padding-left': '5px'})
+        return [view]
 
+    elif section == "sample-report":
         view = html.Div([
             html.Div([
             ], className='pretty_container four columns', style={'border': '1px DarkGrey solid',
@@ -357,19 +409,6 @@ def html_tab_surveys(samples=None,column_names=None):
                                                                'padding-left': '5px'})
         return [view]
 
-    else:
-        view = html.Div([
-            html.Div([
-            ], className='pretty_container four columns', style={'border': '1px DarkGrey solid',
-                                                                 'padding-bottom': '5px',
-                                                                 'padding-left': '5px',
-                                                                 'position': 'relative',
-                                                                 'zIndex': 999}),
-            metadata_table(),
-        ], className='pretty_container eleven columns', style={'border': '1px DarkGrey solid',
-                                                               'padding-bottom': '5px',
-                                                               'padding-left': '5px'})
-        return [view]
 
 def html_tab_analyses(samples, column_names):
 
@@ -550,12 +589,13 @@ def table_main(data, column_names):
     return table
 
 def metadata_table():
-    os.chdir('/Users/stefanocardinale/Documents/SSI/DATABASES/')
+    #os.chdir('/Users/stefanocardinale/Documents/SSI/DATABASES/')
 
-    df = pd.read_csv('map_testing_data.csv', sep=";")
-
+    #df = pd.read_csv('map_testing_data.csv', sep=";")
+    print(COLUMNS)
     table = dash_table.DataTable(
-            data=df.to_dict("rows"),
+            #data=df.to_dict("rows"),
+            data=[{}],
             row_selectable='multi',
             filter_action='native',
             style_table={
@@ -564,7 +604,8 @@ def metadata_table():
                 'overflowX': 'scroll',
             },
             #columns=column_names,
-            columns=[{"name": i, "id": i} for i in df.columns[3:8]],
+            #columns=[{"name": i, "id": i} for i in df.columns[3:8]],
+            columns=COLUMNS,
             style_cell={
                 'minWidth': '180px',
                 'textAlign': 'center',
@@ -578,12 +619,7 @@ def metadata_table():
                 'textAlign': 'center',
                 'whiteSpace': 'normal'
             },
-            style_cell_conditional=[
-                {
-                    "if": {"column_id": "ssi_stamper_failed_tests"},
-                    "textAlign": "left"
-                }
-            ],
+
             #fixed_rows={'headers': True},
             # row_selectable='multi',
             # filtering=True,  # Front end filtering
@@ -676,3 +712,29 @@ def geomap():
                      ])
         ])
     return view
+
+def save_survey(data_dict):
+    bifrostapi.connect(mongoURI='mongodb://localhost:27017/bifrost_upgrade_test', connection_name="local")
+
+    connection = bifrostapi.get_connection("local")
+    db = connection['bifrost_upgrade_test']
+    surveys = db['surveys']
+    cases = db['cases']
+    print(data_dict['cases'])
+
+    surveys.find_one_and_update(
+        filter=data_dict,
+        update={"$setOnInsert": data_dict},
+        # return new doc if one is upserted
+        return_document=pymongo.ReturnDocument.AFTER,
+        upsert=True  # insert the document if it does not exist
+    )
+
+    for i in range(len(data_dict['cases'])):
+        cases.find_one_and_update(
+            filter=data_dict['cases'][i],
+            update={"$setOnInsert": data_dict['cases'][i]},
+            # return new doc if one is upserted
+            return_document=pymongo.ReturnDocument.AFTER,
+            upsert=True  # insert the document if it does not exist
+        )
