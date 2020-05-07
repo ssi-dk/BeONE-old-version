@@ -698,25 +698,28 @@ def update_figures(derived_virtual_selected_rows):
     return fig2
 
 @app.callback(
-    [Output('confirm', 'displayed'),
+    [Output('alert', 'displayed'),
+     Output('confirm', 'displayed'),
      Output('upload-survey-button', 'n_clicks')],
     [Input('save-survey', 'n_clicks'),
-     Input('survey-store', 'data')]
+     Input('survey-store', 'data')],
+     [State('survey-name', 'value')]
 )
-def output_survey_toDB(n_clicks, cases):
+def output_survey_toDB(n_clicks, cases, name):
     print("Output_survey_toDB")
     if n_clicks == 0:
-        return False, 0
-
+        return False, False, 0
     else:
-        print(cases)
-        print("The n. of cases to store is: {}".format(len(cases)))
-        df = {'cases': cases}
-        print(df)
-
-        hc.save_survey(df)
-
-        return True, 0
+        if cases is not None:
+            if name is None or name == '':
+                print("the name is {}".format(name))
+                return True, False, 0
+            else:
+                df = {'cases': cases, 'name': name}
+                hc.save_survey(df)
+                return False, True, 0
+        else:
+            raise PreventUpdate
 
 # Run the server
 if __name__ == "__main__":

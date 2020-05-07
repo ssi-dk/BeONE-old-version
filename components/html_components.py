@@ -379,6 +379,14 @@ def html_tab_surveys(section):
                                                 'padding-left': '5px'}),
         html.Div([
             html.Div([
+                dcc.Input(id='survey-name',
+                          type="text",
+                          placeholder='Give the survey a name')
+            ])
+        ], className='col-auto mr-auto', style={'display': 'inline-block',
+                                                'padding-bottom': '5px'}),
+        html.Div([
+            html.Div([
                 dbc.Button("SAVE",
                            id='save-survey',
                            n_clicks=0,
@@ -386,16 +394,22 @@ def html_tab_surveys(section):
             ])
         ], className='col-auto mr-auto', style={'display': 'inline-block',
                                                 'padding-bottom': '5px'}),
-            html.Div([
-                dcc.ConfirmDialog(
-                    id='confirm',
-                    message='You have saved the survey',
-                ),
-            ]),
-            metadata_table(),
-        ], className='pretty_container eleven columns', style={'border': '1px DarkGrey solid',
-                                                               'padding-bottom': '5px',
-                                                               'padding-left': '5px'})
+        html.Div([
+            dcc.ConfirmDialog(
+                id='alert',
+                message='Please provide a name',
+            ),
+        ]),
+        html.Div([
+            dcc.ConfirmDialog(
+                id='confirm',
+                message='You have saved the survey',
+            ),
+        ]),
+        metadata_table(),
+    ], className='pretty_container eleven columns', style={'border': '1px DarkGrey solid',
+                                                           'padding-bottom': '5px',
+                                                           'padding-left': '5px'})
         return [view]
 
     elif section == "sample-report":
@@ -633,6 +647,7 @@ def metadata_table():
             #     'current_page': 0,
             #     'page_size': TABLE_PAGESIZE
             # },
+            editable=True,
             virtualization=False,
             page_action='none',
             id="metadata-table")
@@ -717,6 +732,7 @@ def geomap():
     return view
 
 def save_survey(data_dict):
+
     bifrostapi.connect(mongoURI='mongodb://localhost:27017/bifrost_upgrade_test', connection_name="local")
 
     connection = bifrostapi.get_connection("local")
@@ -725,18 +741,18 @@ def save_survey(data_dict):
     cases = db['cases']
     print(data_dict['cases'])
 
-    surveys.find_one_and_update(
-        filter=data_dict,
-        update={"$setOnInsert": data_dict},
+    surveys.find_one_and_replace(
+        filter={'name': data_dict['name']},
+        replacement=data_dict,
         # return new doc if one is upserted
         return_document=pymongo.ReturnDocument.AFTER,
         upsert=True  # insert the document if it does not exist
     )
 
     for i in range(len(data_dict['cases'])):
-        cases.find_one_and_update(
-            filter=data_dict['cases'][i],
-            update={"$setOnInsert": data_dict['cases'][i]},
+        cases.find_one_and_replace(
+            filter={'KEY': data_dict['cases'][i]['KEY']},
+            replacement=data_dict['cases'][i],
             # return new doc if one is upserted
             return_document=pymongo.ReturnDocument.AFTER,
             upsert=True  # insert the document if it does not exist
