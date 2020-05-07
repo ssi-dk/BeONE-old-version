@@ -350,22 +350,14 @@ def html_tab_surveys(section):
                 html.Div([
                     dcc.Dropdown(
                         id="surveys-list",
+                        placeholder='Select from mongoDB',
                         options=get_survey_list(),
                         value=None),
                 ]),
             ], className='two columns', style={'display': 'inline-block',
                                         'padding-bottom': '5px',
                                         'padding-left': '5px'}),
-        html.Div([
-            html.Div([
-                dbc.Button("Load from DB",
-                           id='load-survey-from-db',
-                           n_clicks=0,
-                           size='sm')
-            ]),
-        ], className='col-auto mr-auto', style={'display': 'inline-block',
-                                                'padding-bottom': '5px',
-                                                'padding-left': '5px'}),
+
         html.Div([
             html.Div([
                 dcc.Upload(id='upload-survey', children=[
@@ -374,9 +366,20 @@ def html_tab_surveys(section):
             ]),
         ], className='col-auto mr-auto', style={'display': 'inline-block',
                                                 'padding-bottom': '5px'}),
+
         html.Div([
             html.Div([
-                dbc.Button("Save to DB",
+                dbc.Button("LOAD",
+                           id='load-button',
+                           n_clicks=0,
+                           size='sm')
+            ]),
+        ], className='col-auto mr-auto', style={'display': 'inline-block',
+                                                'padding-bottom': '5px',
+                                                'padding-left': '5px'}),
+        html.Div([
+            html.Div([
+                dbc.Button("SAVE",
                            id='save-survey',
                            n_clicks=0,
                            size='sm')

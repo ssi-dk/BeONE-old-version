@@ -284,54 +284,68 @@ def update_selected_samples(n_clicks, rows, selected_rows):
 
 @app.callback(
     [Output('survey-store', 'data'),
-     Output('save-survey', 'n_clicks')],
-    [Input('upload-survey-button', 'n_clicks'),
-     Input('metadata-table', 'derived_virtual_data'),
+     Output('save-survey', 'n_clicks'),
+     Output('load-button', 'n_clicks')],
+    [Input('metadata-table', 'derived_virtual_data'),
      Input('metadata-table', 'derived_virtual_selected_rows')]
 )
-def store_survey(n_clicks, rows, selected_rows):
+def store_survey(rows, selected_rows):
     print("store_survey")
-    if n_clicks == 0:
-        raise PreventUpdate
 
-    else:
-        data = pd.DataFrame(rows)
-        data = data.take(selected_rows)
-        survey = data.to_dict('rows')
+    data = pd.DataFrame(rows)
+    data = data.take(selected_rows)
+    survey = data.to_dict('rows')
 
-        return [survey, 0]
+    return [survey, 0, 0]
 
 @app.callback(
     [Output('metadata-table', 'data'),
      Output('metadata-table', 'columns')],
-    [Input('load-survey-from-db', 'n_clicks'),
-     Input('upload-survey-button', 'n_clicks'),
-     Input('surveys-list', 'value'),
-     Input('upload-survey', 'contents')],
-    [State('upload-survey', 'filename')]
+    [Input('upload-survey-button', 'n_clicks'),
+     Input('load-button', 'n_clicks'),
+     Input('surveys-list', 'value')],
+    [State('upload-survey', 'contents'),
+     State('upload-survey', 'filename')]
 )
 def load_survey(n_clicks, n_clicks2, selected_survey, content, filename):
     print("load_survey")
-    if n_clicks == 0 and n_clicks2 == 0:
+
+    if n_clicks2 == 0:
+
         raise PreventUpdate
 
+    # elif n_clicks == 0 and n_clicks2 == 1:
+    #     if selected_survey is None:
+    #         raise PreventUpdate
+    #     else:
+    #         print(str(selected_survey))
+    #         df = get_survey(selected_survey)
+    #         df = df[0]['cases']
+    #         columns = [{"name": k, "id": k} for k, v in df[0].items()]
+    #         print(df)
+    #         print(columns)
+    #
+    #         return df, columns
     elif n_clicks == 1 and n_clicks2 == 0:
-        if selected_survey is None:
+        raise PreventUpdate
+
+    elif n_clicks2 == 1:
+        if selected_survey is None and content is None:
             raise PreventUpdate
-        else:
+
+        elif selected_survey is None and content is not None:
+            df, columns = parse_contents(content, filename)
+            print(df)
+
+            return df, columns
+
+        elif selected_survey is not None:
             print(str(selected_survey))
             df = get_survey(selected_survey)
             df = df[0]['cases']
             columns = [{"name": k, "id": k} for k, v in df[0].items()]
             print(df)
             print(columns)
-
-            return [df, columns]
-
-    elif n_clicks == 0 and n_clicks2 == 1:
-        if content is not None:
-            df, columns = parse_contents(content, filename)
-            print(df)
 
             return df, columns
 
@@ -684,23 +698,25 @@ def update_figures(derived_virtual_selected_rows):
     return fig2
 
 @app.callback(
-    Output('confirm', 'displayed'),
+    [Output('confirm', 'displayed'),
+     Output('upload-survey-button', 'n_clicks')],
     [Input('save-survey', 'n_clicks'),
      Input('survey-store', 'data')]
 )
 def output_survey_toDB(n_clicks, cases):
     print("Output_survey_toDB")
     if n_clicks == 0:
-        raise PreventUpdate
+        return False, 0
 
     else:
+        print(cases)
         print("The n. of cases to store is: {}".format(len(cases)))
         df = {'cases': cases}
         print(df)
 
         hc.save_survey(df)
 
-        return True
+        return True, 0
 
 # Run the server
 if __name__ == "__main__":
