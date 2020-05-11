@@ -1,11 +1,8 @@
 import pymongo
 import os
-from datetime import datetime
+
 import re
 from bson.objectid import ObjectId
-from bson.son import SON
-import bifrostapi
-
 
 def get_connection():
 

@@ -10,11 +10,13 @@ import numpy as np
 import pandas as pd
 
 import components.global_vars as global_vars
-import bifrost.bifrost_import_data as import_data
 from components.import_data import get_db_list, get_species_list, filter_all, get_survey_list
 
-
 COLUMNS = global_vars.COLUMNS
+
+bifrostapi.connect(mongoURI='mongodb://localhost:27017/bifrost_upgrade_test', connection_name="local")
+connection = bifrostapi.get_connection("local")
+
 
 def samples_list(active, collection_name=None):
     links = [
@@ -95,7 +97,7 @@ def dropdown_db_options():
 
 def dropdown_run_options():
     print('dropdown_run_options')
-    run_list = import_data.get_run_list()
+    run_list = bifrostapi.get_run_list("local")
     run_options = [
         {
             "label": "{}".format(run["name"]),
@@ -757,3 +759,101 @@ def save_survey(data_dict):
             return_document=pymongo.ReturnDocument.AFTER,
             upsert=True  # insert the document if it does not exist
         )
+
+def sidebar2():
+    sidebar2 = html.Div(className="wrapper", children=[
+        html.Div(className="navbar-nav", id="sidebar", children=[
+            html.Div(className="sidebar-header", children=[
+                html.H6("Bootstrap Sidebar")
+            ]),
+            html.Ul(className="list-unstyled components", children=[
+                #html.P("Dummy heading"),
+                html.Li(children=[
+                    html.H6("Select Database", className="m-0", style={'padding-left': '10px'}),
+                    dcc.RadioItems(id="radiobuttons1",
+                                   options=[
+                                       {"label": "Local ", "value": "active"},
+                                       {"label": "Remote ", "value": "custom"},
+                                   ],
+                                   value="active",
+                                   labelStyle={"display": "inline-block", 'padding-left': '10px'}
+                                   ),
+                ], className="active"
+                ),
+                html.Li(children=[
+                    html.H6("Select Time Range", className="m-0", style={'padding-left': '10px'}),
+                    dcc.DatePickerRange(
+                        id="date-picker-select",
+                        display_format='DD MMMM, Y',
+                        start_date=dt(2018, 1, 1),
+                        end_date=dt.today(),
+                        min_date_allowed=dt(2014, 1, 1),
+                        max_date_allowed=dt.today(),
+                        initial_visible_month=dt(2018, 1, 1),
+                        calendar_orientation='vertical',
+                        style={"fontSize": 9}
+                    )
+                ], style={'padding-right': '1px'})
+            ]),
+            html.Li(children=[
+                html.Div([
+                    html.H6("Select NGS run",
+                            className="text-primary"),
+                    dcc.Dropdown(
+                        id="run-list",
+                        # options=dropdowns_options()[0],
+                        value=None,
+                        multi=True,
+                    )
+                ], className='pretty_container three rows', style={'border': '1px DarkGrey solid',
+                                                                      'zIndex': 999}),
+            ]),
+            html.Li(children=[
+                html.Div([
+                    html.H6("Species",
+                            className="text-primary"),
+                    dcc.Dropdown(
+                        id="species-list",
+                        options=get_species_list(),
+                        value=None
+                    ),
+                ], className='pretty_container three rows',
+                    style={'border': '1px DarkGrey solid',
+                           'zIndex': 999}),
+            ]),
+            html.Li(children=[
+                html.Div([
+                    html.Div([
+                        html.Div([
+                            html.Button("Upload run",
+                                        id='run-selector',
+                                        n_clicks=0,
+                                        style={"backgroundColor": '#fff'}),
+                        ], className="row"),
+                        html.Div([
+                            html.Button("Upload a specie",
+                                        id='specie-selector',
+                                        n_clicks=0,
+                                        style={"backgroundColor": '#fff'})
+                        ], className="row", style={'padding-top': '5px'}),
+                    ], className="two rows", ),
+                    html.Div([
+                        html.Div([
+                            html.Button("Reset",
+                                        id='reset-button',
+                                        n_clicks=0,
+                                        style={"backgroundColor": '#fff'})
+                        ]),
+                    ], className='two rows', style={'display': 'inline-block', 'padding-top': '15px'}),
+                ], className='three rows', style={'padding-left': '30px', 'fontColor': 'red'}),
+            ]),
+            html.Ul(className="list-unstyled CTAs", children=[
+                html.Li(dcc.Link(
+                    [
+                        html.Span("Download source")
+                    ], className="download", href="https://bootstrapious.com/tutorial/files/sidebar.zip")
+                )
+            ])
+        ], style={'height': '800px'})
+    ])
+    return sidebar2

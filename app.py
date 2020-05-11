@@ -10,13 +10,10 @@ from dash.dependencies import Input, Output, State
 from datetime import datetime as dt
 import re
 import io
-import bifrostapi
 
 from components.import_data import *
-
 from components import html_components as hc
-from components import mongo_interface
-from bifrost import bifrost_mongo_interface
+
 from bifrost.sample_report import SAMPLE_PAGESIZE, sample_report, children_sample_list_report, samples_next_page
 from bifrost.aggregate_report import aggregate_report, update_aggregate_fig, aggregate_species_dropdown
 import components.global_vars as global_vars
@@ -119,55 +116,45 @@ app.css.append_css(
     {"external_url": "https://fonts.googleapis.com/css?family=Lato"})
 
 app.layout = html.Div(
-    id="app-container",
+    id="wrapper",
     children=[
         dcc.Location(id="url", refresh=False),
         dcc.Store(id="sample-store", data=[], storage_type='session'),
         dcc.Store(id="analysis-store", data=[], storage_type='session'),
         dcc.Store(id="survey-store", data=[], storage_type='session'),
-        dcc.Store(id="param-store", data={}),
         dcc.Store(id="selected-run", data=None),
         dcc.Store(id="selected-species", data=None),
-        html.Div([
-            html.Div(id='content', children=[
+            html.Div([
+                hc.sidebar2(),
+            ], className="navbar-nav", id='sidebar-nav', style={'width': '24%', "display": "inline-block"}),
 
-                hc.html_topbar(),
+            html.Div(children=[
                 html.Div([
-                    html.Button([
-                        html.I(id="topbar-toggle",
-                               # n_clicks=0,
-                               className="fas fa-angle-double-up"),
-                    ], style={"fontSize":'24px'})
-                ], style={'padding-left': '750px', 'padding-bottom': '20px'}),
-                html.Nav([
-                    dcc.Tabs(
-                        id='control-tabs',
-                        value='isolates-tab',
-                        className='circos-control-tabs',
-                        children=[
-                            dcc.Tab(className='circos-tab', label='Surveys', value='survey-tab'),
-                            dcc.Tab(className='circos-tab', label='Analyses', value='analyses-tab'),
-                            dcc.Tab(className='circos-tab', label='Reports', value='reports-tab'),
-                            dcc.Tab(className='circos-tab', label='Isolates', value='isolates-tab'),
-                        ], style={'width': '700px'}
-                    ),
-                ], className='navbar topbar', style={'margin-left': '200px', "fontSize": "2rem"}),
+                    html.Main([
 
-                html.Main([
-                        html.Div([
-                            html.Div([
-                                html.Div(
-                                    samples_list('/'),
-                                    className="btn-group-lg shadow-sm",
-                                    id="selected-view-buttons"
-                                ),
-                            ], className="col-100", style={'padding-left':'600px', 'padding-top': '30px'}),
-                        ], className="row mb-4"),
-                    html.Div(id='tab-content', style={"padding-top":"10px"}),
-                ], className='container-fluid', role='main')
-            ])
-        ], id='content-wrapper', className="d-flex flex-column", style={'margin-bottom': '3%', 'margin-top': '1%', 'margin-left': '1%', 'margin-right': '1%'},
-        )
+                        html.Nav([
+                            dcc.Tabs(
+                                id='control-tabs',
+                                value='isolates-tab',
+                                className='circos-control-tabs',
+                                children=[
+                                    dcc.Tab(className='circos-tab', label='Surveys', value='survey-tab'),
+                                    dcc.Tab(className='circos-tab', label='Analyses', value='analyses-tab'),
+                                    dcc.Tab(className='circos-tab', label='Reports', value='reports-tab'),
+                                    dcc.Tab(className='circos-tab', label='Isolates', value='isolates-tab'),
+                                ]
+                            ),
+                        ], className='navbar topbar', style={"fontSize": "2rem"}),
+                        html.Div(
+                            samples_list('/'),
+                            className="btn-group-lg shadow-sm",
+                            id="selected-view-buttons"
+                        ),
+                        html.Div(id='tab-content', style={"padding-top": "10px"}),
+                    ], className='container-fluid', role='main')
+                ], id="content"),
+            ], id="content-wrapper", style={'width': '74%', "display": "inline-block"}
+            )
     ],
 )
 
@@ -314,18 +301,6 @@ def load_survey(n_clicks, n_clicks2, selected_survey, content, filename):
 
         raise PreventUpdate
 
-    # elif n_clicks == 0 and n_clicks2 == 1:
-    #     if selected_survey is None:
-    #         raise PreventUpdate
-    #     else:
-    #         print(str(selected_survey))
-    #         df = get_survey(selected_survey)
-    #         df = df[0]['cases']
-    #         columns = [{"name": k, "id": k} for k, v in df[0].items()]
-    #         print(df)
-    #         print(columns)
-    #
-    #         return df, columns
     elif n_clicks == 1 and n_clicks2 == 0:
         raise PreventUpdate
 
@@ -412,9 +387,7 @@ def render_content(start_date, end_date, tab, n_clicks, selected_run, selected_s
                     html.Div(id='output-data-upload'),
                     react_phylo.Phylo(
                     id='output',
-                    data='',
-                    NewickString='',
-                        ),
+                    data=''),
             ])
             return [view]
         else:
@@ -450,7 +423,6 @@ def render_content(start_date, end_date, tab, n_clicks, selected_run, selected_s
                 query["_id"] = query["_id"].astype(str)
 
             data = query.to_dict("rows")
-
 
             view = sample_report(data)
 

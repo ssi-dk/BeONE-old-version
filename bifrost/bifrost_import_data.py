@@ -1,4 +1,4 @@
-import sys
+import bifrostapi
 import math
 import pandas as pd
 from datetime import datetime
@@ -7,10 +7,11 @@ from pandas.io.json import json_normalize
 from bson.objectid import ObjectId
 import components.global_vars as global_vars
 import keys
-from bson.json_util import dumps, loads
+
+bifrostapi.connect(mongoURI='mongodb://localhost:27017/bifrost_upgrade_test', connection_name="local")
+connection = bifrostapi.get_connection("local")
 
 pd.options.mode.chained_assignment = None
-
 
 # Utils
 
@@ -25,6 +26,7 @@ def get_from_path(path_string, response):
 # Main functions
 
 def get_species_plot_data(species_list, id_list):
+
     res = mongo_interface.get_species_plot_data(species_list, id_list)
     data = {}
     for doc in res:
@@ -32,20 +34,20 @@ def get_species_plot_data(species_list, id_list):
     return data
 
 def check_run_name(name):
-    return mongo_interface.check_run_name(name)
+    return bifrostapi.check_run_name(name,  connection_name="local")
 
 def get_run_list():
-    return mongo_interface.get_run_list()
+    return bifrostapi.get_run_list( connection_name="local")
 
 def get_group_list(run_name=None):
-    return mongo_interface.get_group_list(run_name)
+    return bifrostapi.get_group_list(run_name,  connection_name="local")
 
 def get_species_list(species_source, run_name=None):
-    return mongo_interface.get_species_list(species_source, run_name)
+    return bifrostapi.get_species_list(species_source, run_name,  connection_name="local")
 
 def filter_name(species=None, group=None, qc_list=None, run_name=None):
-    result = mongo_interface.filter({"name": 1, "sample_sheet.sample_name": 1},
-                                    run_name, species, group, qc_list)
+    result = bifrostapi.filter({"name": 1, "sample_sheet.sample_name": 1},
+                                    run_name, species, group, qc_list, connection_name="local")
     return list(result)
 
 ##NOTE SPLIT/SHORTEN THIS FUNCTION
@@ -55,13 +57,15 @@ def filter_all(species=None, species_source=None, group=None,
                pagination=None,
                projection=None):
     if sample_ids is None:
-        query_result = mongo_interface.filter(
+        query_result = bifrostapi.filter(
             run_names=run_names, species=species,
             species_source=species_source, group=group,
             qc_list=qc_list,
             sample_names=sample_names,
             pagination=pagination,
-            projection=projection)
+            projection=projection,
+            connection_name="local"
+        )
     else:
         query_result = mongo_interface.filter(
             samples=sample_ids, pagination=pagination,
@@ -70,29 +74,27 @@ def filter_all(species=None, species_source=None, group=None,
 
 
 def get_assemblies_paths(samples):
-    return mongo_interface.get_assemblies_paths(samples)
+    return bifrostapi.get_assemblies_paths(samples,  connection_name="local")
 
 # For run_checker
 def get_sample_component_status(samples):
     return mongo_interface.get_sample_component_status(samples)
 
-
 def get_species_QC_values(ncbi_species):
-    return mongo_interface.get_species_QC_values(ncbi_species)
+    return bifrostapi.get_species_QC_values(ncbi_species, connection_name="local")
 
 def get_sample_QC_status(run):
-    return mongo_interface.get_sample_QC_status(run)
-
+    return bifrostapi.get_sample_QC_status(run, connection_name="local")
 
 def get_last_runs(run=None, n=12, runtype=None):
-    return mongo_interface.get_last_runs(run, n, runtype)
+    return bifrostapi.get_last_runs(run, n, runtype, connection_name="local")
 
 def create_feedback_s_c(user, sample, value):
     if user == "":
         raise ValueError("Missing user value")
     component = get_component(name="user_feedback", version="1.0")
     if component is None:
-        component = mongo_interface.save_component(global_vars.feedback_component)
+        component = bifrostapi.save_component(global_vars.feedback_component, connection_name="local")
     d = datetime.utcnow()
     now = d.replace(microsecond=math.floor(d.microsecond/1000)*1000)
 
@@ -164,11 +166,11 @@ def add_user_feedback(user, sample_id, value):
     """
     Submits user feedback to a sample
     """
-    sample = mongo_interface.get_sample(ObjectId(sample_id))
+    sample = bifrostapi.get_sample(ObjectId(sample_id), connection_name="local")
     s_c = create_feedback_s_c(user, sample, value)
     sample, old_value = add_user_feedback_to_properties(sample, s_c)
-    mongo_interface.save_sample_component(s_c)
-    mongo_interface.save_sample(sample)
+    bifrostapi.save_sample_component(s_c, connection_name="local")
+    bifrostapi.save_sample(sample, connection_name="local")
     return (sample["name"], old_value)
 
 def add_batch_user_feedback_and_mail(feedback_pairs, user):
@@ -178,7 +180,7 @@ def add_batch_user_feedback_and_mail(feedback_pairs, user):
     email_pairs = []
     for sample_id, value in feedback_pairs:
         name, old_value = add_user_feedback(user, sample_id, value)
-        runs = mongo_interface.get_sample_runs([ObjectId(sample_id)])
+        runs = bifrostapi.get_sample_runs([ObjectId(sample_id)], connection_name="local")
         run_names = [run["name"] for run in runs]
         if "fail:core facility" in (old_value, value):
             email_pairs.append(name, old_value, value, run_names)
@@ -186,11 +188,11 @@ def add_batch_user_feedback_and_mail(feedback_pairs, user):
 
 
 def get_component(name=None, version=None):
-    return mongo_interface.get_component(name, version)
+    return bifrostapi.get_component(name, version, connection_name="local")
 
 
 def get_run(run_name):
-    return mongo_interface.get_run(run_name)
+    return bifrostapi.get_run(run_name, connection_name="local")
 
 
 def send_mail(sample_info, user):
@@ -229,15 +231,15 @@ def send_mail(sample_info, user):
 
 def get_samples(sample_ids, projection=None):
     sample_ids = [ObjectId(id) for id in sample_ids]
-    return mongo_interface.get_samples(sample_ids, projection=projection)
+    return bifrostapi.get_samples(sample_ids, projection=projection, connection_name="local")
 
 
 def get_comment(run_id):
-    returned = mongo_interface.get_comment(run_id)
+    returned = bifrostapi.get_comment(run_id, connection_name="local")
     if returned:
         return returned.get("Comments", None)
     else:
         return returned
 
 def set_comment(run_id, comment):
-    return mongo_interface.set_comment(run_id, comment)
+    return bifrostapi.set_comment(run_id, comment, connection_name="local")

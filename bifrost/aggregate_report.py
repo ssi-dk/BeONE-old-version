@@ -3,6 +3,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 import plotly.graph_objs as go
 from plotly import tools
+import bifrostapi
 import pandas as pd
 import numpy as np
 import bifrost.bifrost_import_data as import_data
