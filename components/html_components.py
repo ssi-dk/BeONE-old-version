@@ -14,9 +14,6 @@ from components.import_data import get_db_list, get_species_list, filter_all, ge
 
 COLUMNS = global_vars.COLUMNS
 
-bifrostapi.connect(mongoURI='mongodb://localhost:27017/bifrost_upgrade_test', connection_name="local")
-connection = bifrostapi.get_connection("local")
-
 
 def samples_list(active, collection_name=None):
     links = [
@@ -97,6 +94,9 @@ def dropdown_db_options():
 
 def dropdown_run_options():
     print('dropdown_run_options')
+    bifrostapi.connect(mongoURI='mongodb://localhost:27017/bifrost_upgrade_test', connection_name="local")
+    connection = bifrostapi.get_connection("local")
+
     run_list = bifrostapi.get_run_list("local")
     run_options = [
         {
@@ -753,6 +753,15 @@ def save_survey(data_dict):
         )
 
 def sidebar2():
+    bifrostapi.connect(mongoURI='mongodb://localhost:27017/bifrost_upgrade_test', connection_name="local")
+
+    run_list = bifrostapi.get_run_list("local")
+    run_options = [
+        {
+            "label": "{}".format(run["name"]),
+            "value": run["name"]
+        } for run in run_list]
+
     sidebar2 = html.Div(id="sidebar", children=[
             html.Div(className="sidebar-header", children=[
                 html.H6("Bootstrap Sidebar")
@@ -792,12 +801,15 @@ def sidebar2():
                             className="text-primary"),
                     dcc.Dropdown(
                         id="run-list",
-                        # options=dropdowns_options()[0],
+                        options=run_options,
                         value=None,
                         multi=True,
                     )
-                ], className='pretty_container three rows', style={'border': '1px DarkGrey solid',
-                                                                    'zIndex': 999}),
+                ], className='pretty_container three rows',
+                    style={'border': '1px DarkGrey solid',
+                           'color': 'black',
+                           'font-size': 10,
+                            'zIndex': 999}),
             ]),
             html.Li(children=[
                 html.Div([
@@ -806,11 +818,13 @@ def sidebar2():
                     dcc.Dropdown(
                         id="species-list",
                         options=get_species_list(),
-                        value=None
+                        value=None,
                     ),
                 ], className='pretty_container three rows',
                     style={'border': '1px DarkGrey solid',
-                           'zIndex': 999}),
+                           'color': 'black',
+                           'font-size': 12,
+                           'zIndex': 998}),
             ]),
             html.Li(children=[
                 html.Div([

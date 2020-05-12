@@ -10,6 +10,7 @@ from dash.dependencies import Input, Output, State
 from datetime import datetime as dt
 import re
 import io
+import bifrostapi
 
 from components.import_data import *
 from components import html_components as hc
@@ -171,17 +172,24 @@ def select_all(n_clicks, data):
         return [[i for i in range(len(data))]]
 
 
-@app.callback(
-    [Output('run-list', 'options')],
-    [Input('db-list', 'value')]
-)
-def update_runs_dropdown(datab):
-    print("update_runs_dropdown")
-
-    run_options = hc.dropdown_run_options()[0]
-    print(run_options)
-
-    return [run_options]
+# @app.callback(
+#     [Output('run-list', 'options')],
+#     [Input('db-list', 'value')]
+# )
+# def update_runs_dropdown(datab):
+#     print("update_runs_dropdown")
+#
+#     bifrostapi.connect(mongoURI='mongodb://localhost:27017/bifrost_upgrade_test', connection_name="local")
+#
+#     run_list = bifrostapi.get_run_list("local")
+#     run_options = [
+#         {
+#             "label": "{}".format(run["name"]),
+#             "value": run["name"]
+#         } for run in run_list]
+#     print("run options are: {}".format(run_options))
+#
+#     return [run_options]
 
 @app.callback(
     [Output('selected-run', 'data'),
