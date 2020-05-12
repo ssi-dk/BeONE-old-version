@@ -124,37 +124,36 @@ app.layout = html.Div(
         dcc.Store(id="survey-store", data=[], storage_type='session'),
         dcc.Store(id="selected-run", data=None),
         dcc.Store(id="selected-species", data=None),
+
+        hc.sidebar2(),
+
+        html.Div(children=[
             html.Div([
-                hc.sidebar2(),
-            ], className="navbar-nav", id='sidebar-nav', style={'width': '24%', "display": "inline-block"}),
+                html.Main([
 
-            html.Div(children=[
-                html.Div([
-                    html.Main([
-
-                        html.Nav([
-                            dcc.Tabs(
-                                id='control-tabs',
-                                value='isolates-tab',
-                                className='circos-control-tabs',
-                                children=[
-                                    dcc.Tab(className='circos-tab', label='Surveys', value='survey-tab'),
-                                    dcc.Tab(className='circos-tab', label='Analyses', value='analyses-tab'),
-                                    dcc.Tab(className='circos-tab', label='Reports', value='reports-tab'),
-                                    dcc.Tab(className='circos-tab', label='Isolates', value='isolates-tab'),
-                                ]
-                            ),
-                        ], className='navbar topbar', style={"fontSize": "2rem"}),
-                        html.Div(
-                            samples_list('/'),
-                            className="btn-group-lg shadow-sm",
-                            id="selected-view-buttons"
+                    html.Nav([
+                        dcc.Tabs(
+                            id='control-tabs',
+                            value='isolates-tab',
+                            className='circos-control-tabs',
+                            children=[
+                                dcc.Tab(className='circos-tab', label='Surveys', value='survey-tab'),
+                                dcc.Tab(className='circos-tab', label='Analyses', value='analyses-tab'),
+                                dcc.Tab(className='circos-tab', label='Reports', value='reports-tab'),
+                                dcc.Tab(className='circos-tab', label='Isolates', value='isolates-tab'),
+                            ]
                         ),
-                        html.Div(id='tab-content', style={"padding-top": "10px"}),
-                    ], className='container-fluid', role='main')
-                ], id="content"),
-            ], id="content-wrapper", style={'width': '74%', "display": "inline-block"}
-            )
+                    ], className='navbar topbar', style={"fontSize": "2rem"}),
+                    html.Div(
+                        samples_list('/'),
+                        className="btn-group-lg four columns",
+                        id="selected-view-buttons"
+                    ),
+                    html.Div(className='ten columns', id='tab-content', style={"padding-top": "10px", 'margin-left': '1px'}),
+                ], className='container-fluid', role='main')
+            ], id="content"),
+        ], className='flex-column', id="content-wrapper"
+    )
     ],
 )
 

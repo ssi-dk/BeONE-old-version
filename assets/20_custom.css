@@ -547,7 +547,7 @@ a:focus {
 #sidebar {
     min-width: 250px;
     max-width: 250px;
-    background: #7386D5;
+    background: #7aaad6;
     color: #fff;
     transition: all 0.3s;
 }
@@ -558,7 +558,7 @@ a:focus {
 
 #sidebar .sidebar-header {
     padding: 20px;
-    background: #6d7fcc;
+    background: #7aaad6;
 }
 
 #sidebar ul.components {
@@ -575,6 +575,8 @@ a:focus {
     padding: 10px;
     font-size: 1.1em;
     display: block;
+    color: #7aaad6;
+    font-weight: bold
 }
 
 #sidebar ul li a:hover {
@@ -598,6 +600,7 @@ a[data-toggle="collapse"] {
     top: 50%;
     right: 20px;
     transform: translateY(-50%);
+    color: #7aaad6;
 }
 
 ul ul a {

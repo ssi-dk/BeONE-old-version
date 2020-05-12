@@ -79,7 +79,7 @@ def html_div_main():
                                                                  'zIndex':999}),
             table_main(),
 
-        ], className='pretty_container eleven columns', style={'border':'1px DarkGrey solid',
+        ], className='pretty_container', style={'border':'1px DarkGrey solid',
                                                                'padding-bottom':'5px',
                                                                'padding-left':'5px'})
     ], className='row', style={'padding-top': '10px'})
@@ -338,9 +338,8 @@ def html_tab_bifrost(samples, start_date, end_date, column_names):
 
         #html.Div([], id="placeholder0"),
         table_main(data, column_names),
-    ], className='pretty_container eleven columns', style={'border':'1px DarkGrey solid',
+    ], className='pretty_container', style={'border':'1px DarkGrey solid',
                                                            'padding-bottom':'5px',
-                                                           'padding-left':'5px',
                                                            'height': '1000px'})
     return [view]
 
@@ -357,8 +356,7 @@ def html_tab_surveys(section):
                         value=None),
                 ]),
             ], className='two columns', style={'display': 'inline-block',
-                                        'padding-bottom': '5px',
-                                        'padding-left': '5px'}),
+                                        'padding-bottom': '5px'}),
 
         html.Div([
             html.Div([
@@ -409,9 +407,8 @@ def html_tab_surveys(section):
             ),
         ]),
         metadata_table(),
-    ], className='pretty_container eleven columns', style={'border': '1px DarkGrey solid',
-                                                           'padding-bottom': '5px',
-                                                           'padding-left': '5px'})
+    ], className='pretty_container', style={'border': '1px DarkGrey solid',
+                                                           'padding-bottom': '5px'})
         return [view]
 
     elif section == "sample-report":
@@ -419,13 +416,11 @@ def html_tab_surveys(section):
             html.Div([
             ], className='pretty_container four columns', style={'border': '1px DarkGrey solid',
                                                                  'padding-bottom': '5px',
-                                                                 'padding-left': '5px',
                                                                  'position': 'relative',
                                                                  'zIndex': 999}),
             geomap(),
-        ], className='pretty_container eleven columns', style={'border': '1px DarkGrey solid',
-                                                               'padding-bottom': '5px',
-                                                               'padding-left': '5px'})
+        ], className='pretty_container', style={'border': '1px DarkGrey solid',
+                                                               'padding-bottom': '5px'})
         return [view]
 
 
@@ -435,13 +430,11 @@ def html_tab_analyses(samples, column_names):
         html.Div([
         ], className='pretty_container four columns', style={'border': '1px DarkGrey solid',
                                                              'padding-bottom': '5px',
-                                                             'padding-left': '5px',
                                                              'position': 'relative',
                                                              'zIndex': 999}),
         table_main(samples, column_names)
-    ], className='pretty_container eleven columns', style={'border': '1px DarkGrey solid',
-                                                           'padding-bottom': '5px',
-                                                           'padding-left': '5px'})
+    ], className='pretty_container', style={'border': '1px DarkGrey solid',
+                                                           'padding-bottom': '5px'})
     return [view]
 
 def html_tab_reports():
@@ -452,9 +445,8 @@ def html_tab_reports():
                                                              'padding-left': '5px',
                                                              'position': 'relative',
                                                              'zIndex': 999}),
-    ], className='pretty_container eleven columns', style={'border': '1px DarkGrey solid',
-                                                           'padding-bottom': '5px',
-                                                           'padding-left': '5px'})
+    ], className='pretty_container', style={'border': '1px DarkGrey solid',
+                                                           'padding-bottom': '5px'})
     return [view]
 
 def generate_table(tests_df):
@@ -761,8 +753,7 @@ def save_survey(data_dict):
         )
 
 def sidebar2():
-    sidebar2 = html.Div(className="wrapper", children=[
-        html.Div(className="navbar-nav", id="sidebar", children=[
+    sidebar2 = html.Div(id="sidebar", children=[
             html.Div(className="sidebar-header", children=[
                 html.H6("Bootstrap Sidebar")
             ]),
@@ -806,7 +797,7 @@ def sidebar2():
                         multi=True,
                     )
                 ], className='pretty_container three rows', style={'border': '1px DarkGrey solid',
-                                                                      'zIndex': 999}),
+                                                                    'zIndex': 999}),
             ]),
             html.Li(children=[
                 html.Div([
@@ -854,6 +845,5 @@ def sidebar2():
                     ], className="download", href="https://bootstrapious.com/tutorial/files/sidebar.zip")
                 )
             ])
-        ], style={'height': '800px'})
-    ])
+        ], className="pretty_container one-third column left__section", style={'display': 'inline-block'})
     return sidebar2
