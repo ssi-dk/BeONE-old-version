@@ -136,7 +136,8 @@
 
 .circos-tab {
     overflow-y: auto;
-    padding-right: 15px;
+    padding-right: 5px;
+    padding-left: 5px;
 }
 .circos-controls {
     width: 100%;
@@ -353,11 +354,15 @@ fieldset {
   border-width: 0; }
 input[type="checkbox"],
 input[type="radio"] {
-  display: inline; }
+  display: inline;
+  margin-right: 7px;
+  font-weight: bold;
+  color: inherit; }
 label > .label-body {
   display: inline-block;
   margin-left: .5rem;
   font-weight: normal; }
+
 
 
 /* Lists

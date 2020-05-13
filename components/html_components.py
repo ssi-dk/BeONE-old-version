@@ -762,43 +762,61 @@ def sidebar2():
             "value": run["name"]
         } for run in run_list]
 
-    sidebar2 = html.Div(id="sidebar", children=[
-            html.Div(className="sidebar-header", children=[
-                html.H6("Bootstrap Sidebar")
+    sidebar2 = dbc.Collapse(id='sidebar-collapse', children=[
+        html.Div(id="sidebar", children=[
+            html.Ul(className="list-unstyled components", children=[
+                # html.P("Dummy heading"),
+                html.Li(children=[
+                    html.Div([
+                        html.H6("Select Database", className="m-0",
+                                style={'color': '#7aaad6',
+                                       'fontWeight': 'bold',
+                                       'padding-left': '15px'}),
+                        dcc.RadioItems(id="radiobuttons1",
+                                       options=[
+                                           {"label": "Local ", "value": "active"},
+                                           {"label": "Remote ", "value": "custom"},
+                                       ],
+                                       value="active",
+                                       labelStyle={"display": "inline-block", 'padding-left': '15px', 'font-size': 14}
+                                       ),
+                    ], className='pretty_container three rows',
+                        style={'border': '1px DarkGrey solid',
+                               'color': 'black',
+                               'font-size': 10}),
+                ], className="active"),
             ]),
             html.Ul(className="list-unstyled components", children=[
-                #html.P("Dummy heading"),
                 html.Li(children=[
-                    html.H6("Select Database", className="m-0", style={'padding-left': '10px'}),
-                    dcc.RadioItems(id="radiobuttons1",
-                                   options=[
-                                       {"label": "Local ", "value": "active"},
-                                       {"label": "Remote ", "value": "custom"},
-                                   ],
-                                   value="active",
-                                   labelStyle={"display": "inline-block", 'padding-left': '10px'}
-                                   ),
-                ], className="active"
-                ),
-                html.Li(children=[
-                    html.H6("Select Time Range", className="m-0", style={'padding-left': '10px'}),
-                    dcc.DatePickerRange(
-                        id="date-picker-select",
-                        display_format='DD MMMM, Y',
-                        start_date=dt(2018, 1, 1),
-                        end_date=dt.today(),
-                        min_date_allowed=dt(2014, 1, 1),
-                        max_date_allowed=dt.today(),
-                        initial_visible_month=dt(2018, 1, 1),
-                        calendar_orientation='vertical',
-                        style={"fontSize": 9}
-                    )
+                    html.Div([
+                        html.H6("Select Time Range", className="m-0",
+                                style={'color': '#7aaad6',
+                                       'fontWeight': 'bold',
+                                       'padding-left': '15px'}),
+                        dcc.DatePickerRange(
+                            id="date-picker-select",
+                            display_format='DD MMMM, Y',
+                            start_date=dt(2018, 1, 1),
+                            end_date=dt.today(),
+                            min_date_allowed=dt(2014, 1, 1),
+                            max_date_allowed=dt.today(),
+                            initial_visible_month=dt(2018, 1, 1),
+                            calendar_orientation='vertical',
+                            style={"fontSize": 9}
+                        )
+                    ], className='pretty_container three rows',
+                        style={'border': '1px DarkGrey solid',
+                               'color': 'black',
+                               'font-size': 10,
+                               'zIndex': 999}),
                 ], style={'padding-right': '1px'})
             ]),
             html.Li(children=[
                 html.Div([
                     html.H6("Select NGS run",
-                            className="text-primary"),
+                            style={'color': '#7aaad6',
+                                   'fontWeight': 'bold',
+                                   'padding-left': '15px'}),
                     dcc.Dropdown(
                         id="run-list",
                         options=run_options,
@@ -809,12 +827,15 @@ def sidebar2():
                     style={'border': '1px DarkGrey solid',
                            'color': 'black',
                            'font-size': 10,
-                            'zIndex': 999}),
-            ]),
+                           'zIndex': 998}),
+            ], style={'padding-bottom': '20px'}),
             html.Li(children=[
                 html.Div([
                     html.H6("Species",
-                            className="text-primary"),
+                            style={'color': '#7aaad6',
+                                   'fontWeight': 'bold',
+                                   'padding-left': '15px'}
+                            ),
                     dcc.Dropdown(
                         id="species-list",
                         options=get_species_list(),
@@ -824,8 +845,8 @@ def sidebar2():
                     style={'border': '1px DarkGrey solid',
                            'color': 'black',
                            'font-size': 12,
-                           'zIndex': 998}),
-            ]),
+                           'zIndex': 997}),
+            ], style={'padding-bottom': '20px'}),
             html.Li(children=[
                 html.Div([
                     html.Div([
@@ -860,4 +881,6 @@ def sidebar2():
                 )
             ])
         ], className="pretty_container one-third column left__section", style={'display': 'inline-block'})
+    ], className='collapse width', is_open=[True])
+
     return sidebar2

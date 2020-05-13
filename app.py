@@ -116,6 +116,28 @@ cache_timeout = 60
 app.css.append_css(
     {"external_url": "https://fonts.googleapis.com/css?family=Lato"})
 
+tab_style = {
+    'width': '50px',
+    'height': '100px',
+    'borderBottom': '1px solid #d6d6d6',
+    'borderTop': '1px solid #d6d6d6',
+    'borderRight': '1px solid #d6d6d6',
+    'borderLeft': '1px solid #d6d6d6',
+    'padding': '4px 4px 4px 4px',
+
+}
+
+tab_selected_style = {
+    'width': '60px',
+    'height': '100px',
+    'borderTop': '1px solid #d6d6d6',
+    'borderBottom': '1px solid #d6d6d6',
+    'borderLeft': '3px solid #249bab',
+    'padding': '10px 4px 4px 4px',
+    'fontWeight': 'bold',
+    'color': '#249bab'
+}
+
 app.layout = html.Div(
     id="wrapper",
     children=[
@@ -126,31 +148,38 @@ app.layout = html.Div(
         dcc.Store(id="selected-run", data=None),
         dcc.Store(id="selected-species", data=None),
 
-        hc.sidebar2(),
+        html.Div([
+            hc.sidebar2(),
+        ]),
 
         html.Div(children=[
             html.Div([
                 html.Main([
-
+                    html.Button(id='sidebar-toggle', children=[
+                        html.I(className='fas fa-align-left'),
+                        html.Span("Toggle Sidebar"),
+                    ], className='btn btn-info'),
                     html.Nav([
                         dcc.Tabs(
                             id='control-tabs',
                             value='isolates-tab',
-                            className='circos-control-tabs',
                             children=[
-                                dcc.Tab(className='circos-tab', label='Surveys', value='survey-tab'),
-                                dcc.Tab(className='circos-tab', label='Analyses', value='analyses-tab'),
-                                dcc.Tab(className='circos-tab', label='Reports', value='reports-tab'),
-                                dcc.Tab(className='circos-tab', label='Isolates', value='isolates-tab'),
-                            ]
+                                dcc.Tab(label='Surveys', value='survey-tab', style=tab_style, selected_style=tab_selected_style),
+                                dcc.Tab(label='Analyses', value='analyses-tab', style=tab_style, selected_style=tab_selected_style),
+                                dcc.Tab(label='Reports', value='reports-tab', style=tab_style, selected_style=tab_selected_style),
+                                dcc.Tab(label='Isolates', value='isolates-tab', style=tab_style, selected_style=tab_selected_style),
+                            ], vertical=False, style={'writing-mode':'sideways-lr',
+                                                      'width': '70px',
+                                                      'font-size': 18},
+                                parent_style={'float': 'left'}
                         ),
-                    ], className='navbar topbar', style={"fontSize": "2rem"}),
+                    ], className='nav.nav-tabs', style={'padding-top': '10px', 'padding-bottom': '10px'}),
                     html.Div(
                         samples_list('/'),
                         className="btn-group-lg four columns",
                         id="selected-view-buttons"
                     ),
-                    html.Div(className='ten columns', id='tab-content', style={"padding-top": "10px", 'margin-left': '1px'}),
+                    html.Div(className='nine columns', id='tab-content', style={'float':'left', 'padding-top': '10px', 'margin-left': '1px'}),
                 ], className='container-fluid', role='main')
             ], id="content"),
         ], className='flex-column', id="content-wrapper"
@@ -371,8 +400,10 @@ def render_content(start_date, end_date, tab, n_clicks, selected_run, selected_s
         section = path[1]
 
     if tab == 'survey-tab':
-        return hc.html_tab_surveys(section)
-
+        if section == "":
+            return hc.html_tab_surveys(section)
+        else:
+            raise PreventUpdate
 
     elif tab == 'analyses-tab':
         if section == "":
@@ -556,12 +587,12 @@ def next_page(prev_ts, prev_ts2, next_ts, next_ts2, page_n, max_page):
     return samples_next_page(prev_ts, prev_ts2, next_ts, next_ts2, page_n, max_page)
 
 @app.callback(
-    [Output("topbar-collapse", "is_open")],
-    [Input("topbar-toggle", "n_clicks")],
-    [State("topbar-collapse", "is_open")]
+    [Output("sidebar-collapse", "is_open")],
+    [Input("sidebar-toggle", "n_clicks")],
+    [State("sidebar-collapse", "is_open")]
 )
-def topbar_toggle(n, is_open):
-    print("topbar_toggle")
+def sidebar_toggle(n, is_open):
+    print("sidebar_toggle")
     if n:
         #print("the number of clicks is {}".format(n))
         if is_open:
