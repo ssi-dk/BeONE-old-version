@@ -437,6 +437,10 @@ def render_content(start_date, end_date, tab, n_clicks, selected_run, survey_sam
                 print("the survey samples are: {}".format(samples))
 
             return hc.html_tab_surveys(section, samples, columns)
+        elif section == "sample-report":
+            samples=[]
+            columns=[]
+            return hc.html_tab_surveys(section, samples, columns)
         else:
             raise PreventUpdate
 
