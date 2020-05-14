@@ -120,7 +120,7 @@ def generate_sample_report(sample, n_sample):
                         html.A(id="sample-" + str(sample["name"])),
                         html.H6(
                             sample["name"],
-                            className="d-inline font-weight-bold text-primary mx-2"),
+                            className="d-inline font-weight-bold mx-2"),
                         html.I(get(sample, "properties.species"))
                     ], className="d-inline-block"),
                     
@@ -134,7 +134,6 @@ def generate_sample_report(sample, n_sample):
             ], className="shadow mb-4"
         )
     )
-
 
 def html_organisms_table(sample_data, **kwargs):
     percentages = [
@@ -402,29 +401,34 @@ def html_sample_tables(sample_data, **kwargs):
             html.Div([
                 html.Div([
                     html.H6("Sample Sheet", className="table-header"),
-                    sample_sheet_table], className="pretty_container six columns"),
+                    sample_sheet_table], className="col"),
                 html.Div([
                     html.H6("Detected Organisms", className="table-header"),
                 html_organisms_table(sample_data)
-                ], className="pretty_container six columns"),
+                ], className="pretty_container"),
             ], className="col"),
            html.Div([
                html.Div([
                    html.H6(title, className="table-header"),
                     table
-                ], className="pretty_container six columns"),
+                ], className="pretty_container"),
 
             ], className="col")
         ], className='row'),
         html.Div([
-            html.Div([html.H6("MLST type: {}".format(mlst_type), className="table-header")
-                          ], className="pretty_container two columns")
-        ], className="row"),
+            html.Div([
+                html.Div([
+                    html.H6("MLST type: {}".format(mlst_type), className="table-header")
+                          ], className="pretty_container"),
+         ], className='col'),
         html.Div([
-            html_test_tables(sample_data)], className="pretty_container three columns"),
-
-       html.Div([res_div], className="pretty_container three columns")
-
+            html.Div([
+                html_test_tables(sample_data)], className="pretty_container "),
+         ], className="col"),
+        html.Div([
+            html.Div([res_div], className="pretty_container")
+            ], className="col"),
+        ], className="row"),
     ])
 
 

@@ -298,22 +298,23 @@ def html_div_filter():
     ])
 
 def html_tab_bifrost(samples, start_date, end_date, column_names):
+    print("html_tab_bifrost")
+    if samples == []:
+        data = []
+        column_names = COLUMNS
+    else:
+        ids = [sample['_id'] for sample in samples]
+        query = filter_all(sample_ids=ids, projection={'sample_sheet': 1})
 
-    ids = [sample['_id'] for sample in samples]
+        if "_id" in query:
+            query["_id"] = query["_id"].astype(str)
+        #print(dt.strptime(query['sample_sheet.SequenceRunDate'][0], '%Y-%m-%d'))
+        query['sample_sheet.SequenceRunDate'] = pd.to_datetime(query['sample_sheet.SequenceRunDate'], errors='coerce')
+        query = query[query['sample_sheet.SequenceRunDate'].between(start_date, end_date)]
 
-    query = filter_all(sample_ids=ids, projection={'sample_sheet': 1})
+        data = query.to_dict("rows")
+        print(data)
 
-
-    if "_id" in query:
-        query["_id"] = query["_id"].astype(str)
-    #print(dt.strptime(query['sample_sheet.SequenceRunDate'][0], '%Y-%m-%d'))
-    query['sample_sheet.SequenceRunDate'] = pd.to_datetime(query['sample_sheet.SequenceRunDate'], errors='coerce')
-    query = query[query['sample_sheet.SequenceRunDate'].between(start_date, end_date)]
-
-    data = query.to_dict("rows")
-
-    print("The isolate data are: {}".format(query['sample_sheet.SequenceRunDate']))
-    #print(samples)
     view = html.Div([
 
         html.Div([
@@ -343,8 +344,10 @@ def html_tab_bifrost(samples, start_date, end_date, column_names):
                                                            'height': '1000px'})
     return [view]
 
-def html_tab_surveys(section):
-
+def html_tab_surveys(section, data, columns):
+    print("html_tab_surveys")
+    print("The number of samples provided is: {}".format(len(data)))
+    print("the provided survey samples are: {}".format(data))
     if section == "":
         view = html.Div([
             html.Div([
@@ -406,7 +409,7 @@ def html_tab_surveys(section):
                 message='You have saved the survey',
             ),
         ]),
-        metadata_table(),
+        metadata_table(data, columns),
     ], className='pretty_container', style={'border': '1px DarkGrey solid',
                                                            'padding-bottom': '5px'})
         return [view]
@@ -599,14 +602,15 @@ def table_main(data, column_names):
             id="datatable-ssi_stamper")
     return table
 
-def metadata_table():
+def metadata_table(data, columns):
     #os.chdir('/Users/stefanocardinale/Documents/SSI/DATABASES/')
-
+    if columns is None or columns == []:
+        columns = COLUMNS
     #df = pd.read_csv('map_testing_data.csv', sep=";")
-    print(COLUMNS)
+
     table = dash_table.DataTable(
             #data=df.to_dict("rows"),
-            data=[{}],
+            data=data,
             row_selectable='multi',
             filter_action='native',
             style_table={
@@ -616,7 +620,7 @@ def metadata_table():
             },
             #columns=column_names,
             #columns=[{"name": i, "id": i} for i in df.columns[3:8]],
-            columns=COLUMNS,
+            columns=columns,
             style_cell={
                 'minWidth': '180px',
                 'textAlign': 'center',
@@ -745,7 +749,7 @@ def save_survey(data_dict):
 
     for i in range(len(data_dict['cases'])):
         cases.find_one_and_replace(
-            filter={'KEY': data_dict['cases'][i]['KEY']},
+            filter={'name': data_dict['cases'][i]['name']},
             replacement=data_dict['cases'][i],
             # return new doc if one is upserted
             return_document=pymongo.ReturnDocument.AFTER,

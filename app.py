@@ -72,6 +72,7 @@ def samples_list(active, collection_name=None):
     return link_list
 
 def parse_contents(contents, filename):
+    print("Parsing content")
     content_type, content_string = contents.split(',')
 
     decoded = base64.b64decode(content_string)
@@ -89,9 +90,20 @@ def parse_contents(contents, filename):
             'There was an error processing this file.'
         ])
     data = df.to_dict('records')
-    columns = [{'name': i, 'id': i} for i in df.columns]
+    names = [str(item['KEY']) for item in data]
+    print(names)
 
-    return [data, columns]
+    samples = filter_all(sample_names=names, projection={"_id": 1, "name": 1, 'sample_sheet': 1})
+    if "_id" in samples:
+        samples["_id"] = samples["_id"].astype(str)
+
+    columns = [{'name': i, 'id': i} for i in samples.columns]
+    samples = samples.to_dict("rows")
+
+    print("found {} number of samples".format(len(samples)))
+    #columns = [{"name": k, "id": k} for k, v in samples[0].items()]
+
+    return [samples, columns]
 
 external_scripts = [
     'https://kit.fontawesome.com/24170a81ff.js',
@@ -302,6 +314,7 @@ def update_selected_samples(n_clicks, rows, selected_rows):
         samples = data.to_dict('rows')
 
     print("the number of selected samples is: {}".format(len(samples)))
+    print("selected samples: {}".format(samples))
 
     return [samples]
 
@@ -318,8 +331,18 @@ def store_survey(rows, selected_rows):
     data = pd.DataFrame(rows)
     data = data.take(selected_rows)
     survey = data.to_dict('rows')
+    names = [row['name'] for row in survey]
 
-    return [survey, 0, 0]
+    if names == []:
+        samples = []
+    else:
+        samples = filter_all(sample_names=names, projection={"_id": 1, "name": 1, 'sample_sheet': 1})
+        if "_id" in samples:
+            samples["_id"] = samples["_id"].astype(str)
+
+        samples = samples.to_dict("rows")
+
+    return [samples, 0, 0]
 
 @app.callback(
     [Output('metadata-table', 'data'),
@@ -347,6 +370,7 @@ def load_survey(n_clicks, n_clicks2, selected_survey, content, filename):
         elif selected_survey is None and content is not None:
             df, columns = parse_contents(content, filename)
             print(df)
+            print(columns)
 
             return df, columns
 
@@ -367,11 +391,13 @@ def load_survey(n_clicks, n_clicks2, selected_survey, content, filename):
      Input('control-tabs', 'value'),
      Input('run-selector', 'n_clicks'),
      Input('run-list', 'value'),
+     Input('survey-store', 'data'),
+     Input('analysis-store', 'data'),
      Input('sample-store', 'data'),
-     Input('analysis-store', 'data')],
+     ],
      [State("url", "pathname")]
 )
-def render_content(start_date, end_date, tab, n_clicks, selected_run, selected_samples, project_samples, pathname):
+def render_content(start_date, end_date, tab, n_clicks, selected_run, survey_samples, project_samples, bifrost_samples, pathname):
     print('render_content')
     if start_date is not None:
         start_date = dt.strptime(re.split('T| ', start_date)[0], '%Y-%m-%d')
@@ -401,7 +427,16 @@ def render_content(start_date, end_date, tab, n_clicks, selected_run, selected_s
 
     if tab == 'survey-tab':
         if section == "":
-            return hc.html_tab_surveys(section)
+            if survey_samples == []:
+                samples = []
+                columns = []
+            else:
+                samples = survey_samples
+                columns = [{"name": k, "id": k} for k, v in samples[0].items()]
+                print("the columns are: {}".format(columns))
+                print("the survey samples are: {}".format(samples))
+
+            return hc.html_tab_surveys(section, samples, columns)
         else:
             raise PreventUpdate
 
@@ -438,35 +473,49 @@ def render_content(start_date, end_date, tab, n_clicks, selected_run, selected_s
 
         if section == "":
             if n_clicks == 0 or selected_run == []:
-                if selected_samples is not None:
-                    columns_names = global_vars.QC_COLUMNS
-                    samples = selected_samples
+                if survey_samples == []:
+                    print("survey samples store is empty")
+                    if bifrost_samples is None or bifrost_samples == []:
+                        print("bifrost samples store is empty")
+                        samples = []
+                        columns_names = global_vars.QC_COLUMNS
+                    else:
+                        print("bifrost samples store is not empty: {}".format(len(bifrost_samples)))
+                        columns_names = global_vars.QC_COLUMNS
+                        samples = bifrost_samples
+
                 else:
-                    samples = []
-                    columns_names = global_vars.QC_COLUMNS
+                    print("the survey samples store is not empty: {}".format(len(survey_samples)))
+                    samples = survey_samples
+                    columns_names = [{"name": k, "id": k} for k, v in samples[0].items()]
             else:
+                print("a run or specie has been selected")
                 columns_names = global_vars.QC_COLUMNS
-                samples = selected_samples
+                samples = bifrost_samples
 
             print("the number of samples is: {}".format(len(samples)))
             view = hc.html_tab_bifrost(samples, start_date, end_date, columns_names)
 
         elif section == "sample-report":
-
-            ids = [sample['_id'] for sample in selected_samples]
+            if survey_samples != []:
+                ids = [sample['_id'] for sample in survey_samples]
+            else:
+                if bifrost_samples != []:
+                    ids = [sample['_id'] for sample in bifrost_samples]
+                else:
+                    ids = []
 
             query = filter_all(sample_ids=ids, projection={'properties': 1})
-
             if "_id" in query:
                 query["_id"] = query["_id"].astype(str)
 
             data = query.to_dict("rows")
-
+            print("the data to show is: {}".format(data))
             view = sample_report(data)
 
 
         elif section == "aggregate":
-            view = aggregate_report(selected_samples)
+            view = aggregate_report(bifrost_samples)
         else:
            # samples_panel = "d-none"
             view = "Not found"
