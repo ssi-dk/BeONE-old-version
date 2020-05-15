@@ -19,38 +19,51 @@ def assemblatron_contig_diff(res):
 FUNCS = [assemblatron_diff, assemblatron_contig_diff]
 
 QC_COLUMNS = [
-    {
-        "name": "Batch",
-        "id": "sample_sheet.BatchNo"
-    },
+    # {
+    #     "name": "Batch",
+    #     "id": "sample_sheet.BatchNo"
+    # },
     {
         "name": "Date",
         "id": "sample_sheet.BatchRunDate"
     },
     {
         "name": "Sample Nr.",
-        "id": "sample_sheet.SampleSupplied"
+        "id": "sample_sheet.SampleSupplied",
+        'deletable': True,
+        'renamable': True
     },
     {
         "name": "Sample Name",
-        "id": "sample_sheet.sample_name"
+        "id": "sample_sheet.sample_name",
+        'deletable': True,
+        'renamable': True
     },
     {
         "name": "Type",
-        "id": "sample_sheet.SampleType"
+        "id": "sample_sheet.SampleType",
+        'deletable': True,
+        'renamable': True
     },
     {
         "name": "Sequence Date",
-        "id": "sample_sheet.SequenceRunDate"
+        "id": "sample_sheet.SequenceRunDate",
+        'deletable': True,
+        'renamable': True
     },
     {
         "name": "Run",
-        "id": "sample_sheet.run_name"
+        "id": "sample_sheet.run_name",
+        'deletable': True,
+        'renamable': True
     },
     {
         "name": "Provided Specie",
-        "id": "sample_sheet.provided_species"
-    },
+        "id": "sample_sheet.provided_species",
+        'deletable': True,
+        'renamable': True
+    }
+
 ]
 
 COLUMNS = [

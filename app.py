@@ -97,13 +97,13 @@ def parse_contents(contents, filename):
     if "_id" in samples:
         samples["_id"] = samples["_id"].astype(str)
 
-    columns = [{'name': i, 'id': i} for i in samples.columns]
+    #columns = [{'name': i, 'id': i} for i in samples.columns]
     samples = samples.to_dict("rows")
 
     print("found {} number of samples".format(len(samples)))
     #columns = [{"name": k, "id": k} for k, v in samples[0].items()]
 
-    return [samples, columns]
+    return samples
 
 external_scripts = [
     'https://kit.fontawesome.com/24170a81ff.js',
@@ -144,7 +144,7 @@ tab_selected_style = {
     'height': '100px',
     'borderTop': '1px solid #d6d6d6',
     'borderBottom': '1px solid #d6d6d6',
-    'borderLeft': '3px solid #249bab',
+    'borderRight': '3px solid #249bab',
     'padding': '10px 4px 4px 4px',
     'fontWeight': 'bold',
     'color': '#249bab'
@@ -331,18 +331,8 @@ def store_survey(rows, selected_rows):
     data = pd.DataFrame(rows)
     data = data.take(selected_rows)
     survey = data.to_dict('rows')
-    names = [row['name'] for row in survey]
 
-    if names == []:
-        samples = []
-    else:
-        samples = filter_all(sample_names=names, projection={"_id": 1, "name": 1, 'sample_sheet': 1})
-        if "_id" in samples:
-            samples["_id"] = samples["_id"].astype(str)
-
-        samples = samples.to_dict("rows")
-
-    return [samples, 0, 0]
+    return [survey, 0, 0]
 
 @app.callback(
     [Output('metadata-table', 'data'),
@@ -368,9 +358,9 @@ def load_survey(n_clicks, n_clicks2, selected_survey, content, filename):
             raise PreventUpdate
 
         elif selected_survey is None and content is not None:
-            df, columns = parse_contents(content, filename)
+            df = parse_contents(content, filename)
+            columns = global_vars.QC_COLUMNS
             print(df)
-            print(columns)
 
             return df, columns
 
@@ -378,7 +368,8 @@ def load_survey(n_clicks, n_clicks2, selected_survey, content, filename):
             print(str(selected_survey))
             df = get_survey(selected_survey)
             df = df[0]['cases']
-            columns = [{"name": k, "id": k} for k, v in df[0].items()]
+            #columns = [{"name": k, "id": k} for k, v in df[0].items()]
+            columns = global_vars.QC_COLUMNS
             print(df)
             print(columns)
 
@@ -432,7 +423,8 @@ def render_content(start_date, end_date, tab, n_clicks, selected_run, survey_sam
                 columns = []
             else:
                 samples = survey_samples
-                columns = [{"name": k, "id": k} for k, v in samples[0].items()]
+                #columns = [{"name": k, "id": k, 'deletable': True, 'renamable': True} for k, v in samples[0].items()]
+                columns = global_vars.QC_COLUMNS
                 print("the columns are: {}".format(columns))
                 print("the survey samples are: {}".format(samples))
 
@@ -491,7 +483,8 @@ def render_content(start_date, end_date, tab, n_clicks, selected_run, survey_sam
                 else:
                     print("the survey samples store is not empty: {}".format(len(survey_samples)))
                     samples = survey_samples
-                    columns_names = [{"name": k, "id": k} for k, v in samples[0].items()]
+                    #columns_names = [{"name": k, "id": k} for k, v in samples[0].items()]
+                    columns_names = global_vars.QC_COLUMNS
             else:
                 print("a run or specie has been selected")
                 columns_names = global_vars.QC_COLUMNS
@@ -514,7 +507,6 @@ def render_content(start_date, end_date, tab, n_clicks, selected_run, survey_sam
                 query["_id"] = query["_id"].astype(str)
 
             data = query.to_dict("rows")
-            print("the data to show is: {}".format(data))
             view = sample_report(data)
 
 
@@ -571,19 +563,31 @@ def update_url(pathname, tab):
 @app.callback(
     Output("sample-report", "children"),
     [Input("page-n", "children"),
-     Input("sample-store", "data")]
+     Input('survey-store', 'data'),
+     Input('sample-store', 'data')]
 )
-def fill_sample_report(page_n, sample_store):
+def fill_sample_report(page_n, survey_store, sample_store):
+    print("fill_sample_report")
+    print(sample_store)
+
+    if survey_store != []:
+        store = survey_store
+    else:
+        if sample_store != []:
+            store = sample_store
+        else:
+            store = []
+
     page_n = int(page_n)
     sample_names = list(
-        map(lambda x: x["name"], sample_store))
+        map(lambda x: x["name"], store))
     if len(sample_names) == 0:
         return None
 
     data_table = filter_all(
         sample_names=sample_names,
         pagination={"page_size": SAMPLE_PAGESIZE, "current_page": page_n})
-    max_page = len(sample_store) // SAMPLE_PAGESIZE
+    max_page = len(store) // SAMPLE_PAGESIZE
     # We need to have fake radio buttons with the same ids to account for times
     # when not all SAMPLE_PAGESIZE samples are shown and are not taking the ids required by the callback
     html_fake_radio_buttons = html.Div([dcc.RadioItems(

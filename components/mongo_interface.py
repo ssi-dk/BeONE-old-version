@@ -30,11 +30,11 @@ def get_survey_list():
     db = connection['bifrost_upgrade_test']
     # Fastest.
     surveys = list(db.surveys.find({},
-                        {"_id": 1}).sort([['metadata.created_at', pymongo.DESCENDING]]))
+                        {"name": 1}).sort([['metadata.created_at', pymongo.DESCENDING]]))
 
     survey_options = [
-        {"label": "{}".format(i['_id']),
-         "value": "{}".format(i['_id'])} for i in surveys]
+        {"label": "{}".format(i['name']),
+         "value": "{}".format(i['name'])} for i in surveys]
 
     return survey_options
 
@@ -181,7 +181,7 @@ def get_survey(selected_survey):
     connection = pymongo.MongoClient()
     db = connection["bifrost_upgrade_test"]
 
-    return list(db.surveys.find({"_id": ObjectId(selected_survey)}))
+    return list(db.surveys.find({"name": selected_survey}))
 
 
 def filter_qc(qc_list):

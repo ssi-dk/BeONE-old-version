@@ -358,7 +358,7 @@ def html_tab_surveys(section, data, columns):
                         options=get_survey_list(),
                         value=None),
                 ]),
-            ], className='two columns', style={'display': 'inline-block',
+            ], className='three columns', style={'display': 'inline-block',
                                         'padding-bottom': '5px'}),
 
         html.Div([
