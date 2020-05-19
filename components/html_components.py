@@ -398,6 +398,12 @@ def html_tab_surveys(section, data, columns):
         ], className='col-auto mr-auto', style={'display': 'inline-block',
                                                 'padding-bottom': '5px'}),
         html.Div([
+            html.Div([
+                html.H6(id='text', children='', style={'color': 'red'})
+            ])
+        ], className='col-auto mr-auto', style={'display': 'inline-block',
+                                                'padding-bottom': '5px'}),
+        html.Div([
             dcc.ConfirmDialog(
                 id='alert',
                 message='Please provide a name',

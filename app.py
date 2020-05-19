@@ -154,6 +154,7 @@ app.layout = html.Div(
     id="wrapper",
     children=[
         dcc.Location(id="url", refresh=False),
+        dcc.Store(id='file-store', data = [], storage_type='session'),
         dcc.Store(id="sample-store", data=[], storage_type='session'),
         dcc.Store(id="analysis-store", data=[], storage_type='session'),
         dcc.Store(id="survey-store", data=[], storage_type='session'),
@@ -328,71 +329,81 @@ def update_selected_samples(n_clicks, rows, selected_rows):
 def store_survey(rows, selected_rows):
     print("store_survey")
 
-    if rows == []:
-        raise PreventUpdate
-
+    if selected_rows == []:
+        data = pd.DataFrame(rows)
     else:
-        if selected_rows == []:
-            data = pd.DataFrame(rows)
-        else:
-            data = pd.DataFrame(rows)
-            data = data.take(selected_rows)
+        data = pd.DataFrame(rows)
+        data = data.take(selected_rows)
 
-        survey = data.to_dict("records")
-        #survey = {}
-        # survey = []
-        # for i in range(len(data)):
-        #     case = {}
-        #     case['_id'] = data.iloc[i, 0]
-        #     case['name']  = data.iloc[i, 1]
-        #     case['case_metadata'] = {n.split(".")[1]: data.loc[i, n] for n in data.columns[2:]}
-        #     #case['case_metadata'] = dict(data.iloc[0, 2:])
-        #     survey.append(case)
+    survey = data.to_dict("records")
+    #survey = {}
+    # survey = []
+    # for i in range(len(data)):
+    #     case = {}
+    #     case['_id'] = data.iloc[i, 0]
+    #     case['name']  = data.iloc[i, 1]
+    #     case['case_metadata'] = {n.split(".")[1]: data.loc[i, n] for n in data.columns[2:]}
+    #     #case['case_metadata'] = dict(data.iloc[0, 2:])
+    #     survey.append(case)
 
-        print("the survey is: {}".format(survey))
-        print(len(survey))
-        #survey = data.to_dict('rows')
+    print("the survey is: {}".format(survey))
+    print(len(survey))
+    #survey = data.to_dict('rows')
 
-        #print("metadata is: {}".format(metadata))
-        return [survey, 0, 0]
+    #print("metadata is: {}".format(metadata))
+    return [survey, 0, 0]
 
 @app.callback(
     [Output('metadata-table', 'data'),
      Output('metadata-table', 'columns')],
-    [Input('upload-survey-button', 'n_clicks'),
-     Input('load-button', 'n_clicks'),
+    [Input('file-store', 'data')]
+)
+def get_metadata(cases):
+    print("get_metadata")
+    if cases is None or cases == []:
+        raise PreventUpdate
+
+    survey = cases
+    columns = [{"name": k, "id": k} for k, v in survey[0].items()]
+
+    return survey, columns
+
+
+@app.callback(
+    [Output('file-store', 'data'),
+     Output('text', 'children')],
+    [Input('load-button', 'n_clicks'),
      Input('surveys-list', 'value')],
     [State('upload-survey', 'contents'),
      State('upload-survey', 'filename')]
 )
-def load_survey(n_clicks, n_clicks2, selected_survey, content, filename):
+def load_survey(n_clicks2, selected_survey, content, filename):
     print("load_survey")
 
     if n_clicks2 == 0:
         print("n_clicks2 == 0")
         raise PreventUpdate
 
-    elif n_clicks == 1 and n_clicks2 == 0:
-        print("n_clicks == 1 and n_clicks2 == 0")
-        raise PreventUpdate
-
-    elif n_clicks2 == 1:
+    else:
         if selected_survey is None and content is None:
             print("selected_survey and content are None")
-            raise PreventUpdate
+            survey = []
+            #columns = global_vars.QC_COLUMNS
 
         elif selected_survey is None and content is not None:
             survey = parse_contents(content, filename)
             #columns = global_vars.QC_COLUMNS
-            columns = [{"name": k, "id": k} for k, v in survey[0].items()]
+            #columns = [{"name": k, "id": k} for k, v in survey[0].items()]
 
         elif selected_survey is not None:
             print(str(selected_survey))
             df = get_survey(selected_survey)
             survey = df[0]['cases']
-            columns = [{"name": k, "id": k} for k, v in df[0].items()]
+            #columns = [{"name": k, "id": k} for k, v in df[0].items()]
 
-        return survey, columns
+        print("the survey is: {}".format(survey))
+        text = "You have {} cases in the database".format(len(survey))
+        return survey, text
 
 @app.callback(
     [Output('tab-content', 'children')],
@@ -438,6 +449,7 @@ def render_content(start_date, end_date, tab, n_clicks, selected_run, survey_sam
     if tab == 'survey-tab':
         if section == "":
             if survey_samples == []:
+                print("survey is empty")
                 samples = []
                 columns = []
             else:
@@ -785,8 +797,7 @@ def update_figures(derived_virtual_selected_rows):
 
 @app.callback(
     [Output('alert', 'displayed'),
-     Output('confirm', 'displayed'),
-     Output('upload-survey-button', 'n_clicks')],
+     Output('confirm', 'displayed')],
     [Input('save-survey', 'n_clicks'),
      Input('survey-store', 'data')],
      [State('survey-name', 'value')]
@@ -794,17 +805,19 @@ def update_figures(derived_virtual_selected_rows):
 def output_survey_toDB(n_clicks, cases, name):
     print("Output_survey_toDB")
     if n_clicks == 0:
-        return False, False, 0
+        raise PreventUpdate
     else:
         if cases is not None:
             if name is None or name == '':
-                return True, False, 0
+                raise PreventUpdate
             else:
+                print('I am saving the survey')
                 survey = {}
                 survey['name'] = name
                 survey['cases'] = cases
                 hc.save_survey(survey)
-                return False, True, 0
+
+                return False, True
         else:
             raise PreventUpdate
 
