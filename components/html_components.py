@@ -303,8 +303,8 @@ def html_tab_bifrost(samples, start_date, end_date, column_names):
         data = []
         column_names = COLUMNS
     else:
-        ids = [sample['_id'] for sample in samples]
-        query = filter_all(sample_ids=ids, projection={'sample_sheet': 1})
+        names = [sample['name'] for sample in samples]
+        query = filter_all(sample_names=names, projection={'sample_sheet': 1})
 
         if "_id" in query:
             query["_id"] = query["_id"].astype(str)
@@ -730,6 +730,7 @@ def geomap():
     return view
 
 def save_survey(data_dict):
+    print("save_survey")
 
     bifrostapi.connect(mongoURI='mongodb://localhost:27017/bifrost_upgrade_test', connection_name="local")
 

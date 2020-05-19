@@ -27,12 +27,12 @@ QC_COLUMNS = [
         "name": "Date",
         "id": "sample_sheet.BatchRunDate"
     },
-    {
-        "name": "Sample Nr.",
-        "id": "sample_sheet.SampleSupplied",
-        'deletable': True,
-        'renamable': True
-    },
+    # {
+    #     "name": "Sample Nr.",
+    #     "id": "sample_sheet.SampleSupplied",
+    #     'deletable': True,
+    #     'renamable': True
+    # },
     {
         "name": "Sample Name",
         "id": "sample_sheet.sample_name",

@@ -83,27 +83,27 @@ def parse_contents(contents, filename):
                 io.StringIO(decoded.decode('utf-8')))
         elif 'xls' in filename:
             # Assume that the user uploaded an excel file
-            df = pd.read_excel(io.BytesIO(decoded))
+            df = pd.read_excel(io.BytesIO(decoded), dtype={'KEY': str})
     except Exception as e:
         print(e)
         return html.Div([
             'There was an error processing this file.'
         ])
-    data = df.to_dict('records')
-    names = [str(item['KEY']) for item in data]
-    print(names)
+    #data = df.to_dict('records')
+    #names = [str(item['KEY']) for item in data]
 
-    samples = filter_all(sample_names=names, projection={"_id": 1, "name": 1, 'sample_sheet': 1})
+    samples = filter_all(sample_names=df['KEY'], projection={"name": 1})
     if "_id" in samples:
         samples["_id"] = samples["_id"].astype(str)
 
     #columns = [{'name': i, 'id': i} for i in samples.columns]
-    samples = samples.to_dict("rows")
 
-    print("found {} number of samples".format(len(samples)))
+    data = df.loc[df['KEY'].isin(samples['name'])]
+    data.rename(columns={'KEY': 'name'}, inplace = True)
+    data = data.to_dict('records')
     #columns = [{"name": k, "id": k} for k, v in samples[0].items()]
 
-    return samples
+    return data
 
 external_scripts = [
     'https://kit.fontawesome.com/24170a81ff.js',
@@ -174,7 +174,7 @@ app.layout = html.Div(
                     html.Nav([
                         dcc.Tabs(
                             id='control-tabs',
-                            value='isolates-tab',
+                            value='survey-tab',
                             children=[
                                 dcc.Tab(label='Surveys', value='survey-tab', style=tab_style, selected_style=tab_selected_style),
                                 dcc.Tab(label='Analyses', value='analyses-tab', style=tab_style, selected_style=tab_selected_style),
@@ -328,11 +328,33 @@ def update_selected_samples(n_clicks, rows, selected_rows):
 def store_survey(rows, selected_rows):
     print("store_survey")
 
-    data = pd.DataFrame(rows)
-    data = data.take(selected_rows)
-    survey = data.to_dict('rows')
+    if rows == []:
+        raise PreventUpdate
 
-    return [survey, 0, 0]
+    else:
+        if selected_rows == []:
+            data = pd.DataFrame(rows)
+        else:
+            data = pd.DataFrame(rows)
+            data = data.take(selected_rows)
+
+        survey = data.to_dict("records")
+        #survey = {}
+        # survey = []
+        # for i in range(len(data)):
+        #     case = {}
+        #     case['_id'] = data.iloc[i, 0]
+        #     case['name']  = data.iloc[i, 1]
+        #     case['case_metadata'] = {n.split(".")[1]: data.loc[i, n] for n in data.columns[2:]}
+        #     #case['case_metadata'] = dict(data.iloc[0, 2:])
+        #     survey.append(case)
+
+        print("the survey is: {}".format(survey))
+        print(len(survey))
+        #survey = data.to_dict('rows')
+
+        #print("metadata is: {}".format(metadata))
+        return [survey, 0, 0]
 
 @app.callback(
     [Output('metadata-table', 'data'),
@@ -347,33 +369,30 @@ def load_survey(n_clicks, n_clicks2, selected_survey, content, filename):
     print("load_survey")
 
     if n_clicks2 == 0:
-
+        print("n_clicks2 == 0")
         raise PreventUpdate
 
     elif n_clicks == 1 and n_clicks2 == 0:
+        print("n_clicks == 1 and n_clicks2 == 0")
         raise PreventUpdate
 
     elif n_clicks2 == 1:
         if selected_survey is None and content is None:
+            print("selected_survey and content are None")
             raise PreventUpdate
 
         elif selected_survey is None and content is not None:
-            df = parse_contents(content, filename)
-            columns = global_vars.QC_COLUMNS
-            print(df)
-
-            return df, columns
+            survey = parse_contents(content, filename)
+            #columns = global_vars.QC_COLUMNS
+            columns = [{"name": k, "id": k} for k, v in survey[0].items()]
 
         elif selected_survey is not None:
             print(str(selected_survey))
             df = get_survey(selected_survey)
-            df = df[0]['cases']
-            #columns = [{"name": k, "id": k} for k, v in df[0].items()]
-            columns = global_vars.QC_COLUMNS
-            print(df)
-            print(columns)
+            survey = df[0]['cases']
+            columns = [{"name": k, "id": k} for k, v in df[0].items()]
 
-            return df, columns
+        return survey, columns
 
 @app.callback(
     [Output('tab-content', 'children')],
@@ -388,7 +407,7 @@ def load_survey(n_clicks, n_clicks2, selected_survey, content, filename):
      ],
      [State("url", "pathname")]
 )
-def render_content(start_date, end_date, tab, n_clicks, selected_run, survey_samples, project_samples, bifrost_samples, pathname):
+def render_content(start_date, end_date, tab, n_clicks, selected_run, survey_samples, analysis_samples, bifrost_samples, pathname):
     print('render_content')
     if start_date is not None:
         start_date = dt.strptime(re.split('T| ', start_date)[0], '%Y-%m-%d')
@@ -438,12 +457,12 @@ def render_content(start_date, end_date, tab, n_clicks, selected_run, survey_sam
 
     elif tab == 'analyses-tab':
         if section == "":
-            if project_samples is None:
+            if analysis_samples is None:
                 raise PreventUpdate
             else:
-                samples = project_samples
+                samples = analysis_samples
                 print("the number of project samples is {}".format(len(samples)))
-                print(project_samples)
+                print(analysis_samples)
                 columns_names = global_vars.COLUMNS
 
                 return hc.html_tab_analyses(samples, columns_names)
@@ -495,14 +514,14 @@ def render_content(start_date, end_date, tab, n_clicks, selected_run, survey_sam
 
         elif section == "sample-report":
             if survey_samples != []:
-                ids = [sample['_id'] for sample in survey_samples]
+                names = [sample['name'] for sample in survey_samples]
             else:
                 if bifrost_samples != []:
-                    ids = [sample['_id'] for sample in bifrost_samples]
+                    names = [sample['name'] for sample in bifrost_samples]
                 else:
-                    ids = []
+                    names = []
 
-            query = filter_all(sample_ids=ids, projection={'properties': 1})
+            query = filter_all(sample_names=names, projection={'properties': 1})
             if "_id" in query:
                 query["_id"] = query["_id"].astype(str)
 
@@ -779,11 +798,12 @@ def output_survey_toDB(n_clicks, cases, name):
     else:
         if cases is not None:
             if name is None or name == '':
-                print("the name is {}".format(name))
                 return True, False, 0
             else:
-                df = {'cases': cases, 'name': name}
-                hc.save_survey(df)
+                survey = {}
+                survey['name'] = name
+                survey['cases'] = cases
+                hc.save_survey(survey)
                 return False, True, 0
         else:
             raise PreventUpdate
