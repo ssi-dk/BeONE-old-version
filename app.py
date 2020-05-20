@@ -106,8 +106,7 @@ def parse_contents(contents, filename):
     return data
 
 external_scripts = [
-    'https://kit.fontawesome.com/24170a81ff.js',
-    '/Users/stefanocardinale/Documents/SSI/git.repositories3/phylocanvas/phylocanvas/dev/index.js'
+    'https://kit.fontawesome.com/24170a81ff.js'
 ]
 
 app = dash.Dash(__name__,
@@ -355,28 +354,27 @@ def store_survey(rows, selected_rows):
     #print("metadata is: {}".format(metadata))
     return [survey, 0, 0]
 
-# @app.callback(
-#     [Output('metadata-table', 'data'),
-#      Output('metadata-table', 'columns')],
-#     [Input('file-store', 'data')]
-# )
-# def get_metadata(cases):
-#     print("get_metadata")
-#     if cases is None or cases == []:
-#         survey = []
-#         columns = global_vars.QC_COLUMNS
-#     else:
-#         survey = cases
-#         columns = [{"name": k, "id": k} for k, v in survey[0].items()]
-#
-#     return survey, columns
+
+@app.callback(
+    [Output('metadata-table', 'data'),
+     Output('metadata-table', 'columns')],
+    [Input('file-store', 'data')]
+)
+def get_metadata(cases):
+    print("get_metadata")
+    if cases is None or cases == []:
+        survey = []
+        columns = global_vars.QC_COLUMNS
+    else:
+        survey = cases
+        columns = [{"name": k, "id": k} for k, v in survey[0].items()]
+
+    return survey, columns
 
 
 @app.callback(
     [Output('file-store', 'data'),
-     Output('text', 'children'),
-     Output('metadata-table', 'data'),
-     Output('metadata-table', 'columns')],
+     Output('text', 'children')],
     [Input('load-button', 'n_clicks')],
     [State('surveys-list', 'value'),
      State('upload-survey', 'contents'),
@@ -408,7 +406,7 @@ def load_survey(n_clicks2, selected_survey, content, filename):
 
         print("the survey is: {}".format(survey))
         text = "You have {} cases in the database".format(len(survey))
-        return [survey, text, survey, columns]
+        return [survey, text]
 
 @app.callback(
     [Output('tab-content', 'children')],
