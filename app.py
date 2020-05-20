@@ -25,9 +25,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import keys
 
-os.chdir('/Users/stefanocardinale/Documents/SSI/DATABASES/')
-
-data = pd.read_csv('map_testing_data.csv', sep=";")
+data = pd.DataFrame()
 
 def samples_list(active, collection_name=None):
     links = [
@@ -327,7 +325,7 @@ def update_selected_samples(n_clicks, rows, selected_rows):
 )
 def store_survey(rows, selected_rows):
     print("store_survey")
-    if rows == [] or rows is None:
+    if rows == [] or rows is None or rows == [{}]:
         raise PreventUpdate
 
     if selected_rows == []:
@@ -358,10 +356,12 @@ def store_survey(rows, selected_rows):
 @app.callback(
     [Output('metadata-table', 'data'),
      Output('metadata-table', 'columns')],
-    [Input('file-store', 'data')]
+    [Input('file-store', 'data'),
+     Input('tab-placeholder','children')]
 )
-def get_metadata(cases):
+def get_metadata(cases, _):
     print("get_metadata")
+    print("Length: ", len(cases))
     if cases is None or cases == []:
         survey = []
         columns = global_vars.QC_COLUMNS
@@ -413,15 +413,15 @@ def load_survey(n_clicks2, selected_survey, content, filename):
     [Input('date-picker-select', 'start_date'),
      Input('date-picker-select', 'end_date'),
      Input('control-tabs', 'value'),
-     Input('survey-store', 'data'),
      Input('run-selector', 'n_clicks'),
      Input('run-list', 'value'),
      Input('analysis-store', 'data'),
      Input('sample-store', 'data'),
      ],
-     [State("url", "pathname")]
+     [State("url", "pathname"),
+      State('survey-store', 'data')]
 )
-def render_content(start_date, end_date, tab, survey_samples,  n_clicks, selected_run, analysis_samples, bifrost_samples, pathname):
+def render_content(start_date, end_date, tab,  n_clicks, selected_run, analysis_samples, bifrost_samples, pathname, survey_samples):
     print('render_content')
     if start_date is not None:
         start_date = dt.strptime(re.split('T| ', start_date)[0], '%Y-%m-%d')
