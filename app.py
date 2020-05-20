@@ -363,7 +363,6 @@ def store_survey(rows, selected_rows):
 )
 def get_metadata(cases, _):
     print("get_metadata")
-    print("Length: ", len(cases))
     if cases is None or cases == []:
         survey = []
         columns = global_vars.QC_COLUMNS
