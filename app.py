@@ -192,14 +192,14 @@ app.layout = html.Div(
                         className="btn-group-lg four columns",
                         id="selected-view-buttons"
                     ),
-                    html.Div(className='nine columns', id='tab-content', style={'float':'left', 'padding-top': '10px', 'margin-left': '1px'}),
+                    html.Div(id='tab-content', className='nine columns',  style={'float':'left', 'padding-top': '10px', 'margin-left': '1px'}),
+
                 ], className='container-fluid', role='main')
             ], id="content"),
         ], className='flex-column', id="content-wrapper"
     )
     ],
 )
-
 
 @app.callback(
     [Output('datatable-ssi_stamper', "selected_rows")],
@@ -328,6 +328,8 @@ def update_selected_samples(n_clicks, rows, selected_rows):
 )
 def store_survey(rows, selected_rows):
     print("store_survey")
+    if rows == [] or rows is None:
+        raise PreventUpdate
 
     if selected_rows == []:
         data = pd.DataFrame(rows)
@@ -353,28 +355,31 @@ def store_survey(rows, selected_rows):
     #print("metadata is: {}".format(metadata))
     return [survey, 0, 0]
 
-@app.callback(
-    [Output('metadata-table', 'data'),
-     Output('metadata-table', 'columns')],
-    [Input('file-store', 'data')]
-)
-def get_metadata(cases):
-    print("get_metadata")
-    if cases is None or cases == []:
-        raise PreventUpdate
-
-    survey = cases
-    columns = [{"name": k, "id": k} for k, v in survey[0].items()]
-
-    return survey, columns
+# @app.callback(
+#     [Output('metadata-table', 'data'),
+#      Output('metadata-table', 'columns')],
+#     [Input('file-store', 'data')]
+# )
+# def get_metadata(cases):
+#     print("get_metadata")
+#     if cases is None or cases == []:
+#         survey = []
+#         columns = global_vars.QC_COLUMNS
+#     else:
+#         survey = cases
+#         columns = [{"name": k, "id": k} for k, v in survey[0].items()]
+#
+#     return survey, columns
 
 
 @app.callback(
     [Output('file-store', 'data'),
-     Output('text', 'children')],
-    [Input('load-button', 'n_clicks'),
-     Input('surveys-list', 'value')],
-    [State('upload-survey', 'contents'),
+     Output('text', 'children'),
+     Output('metadata-table', 'data'),
+     Output('metadata-table', 'columns')],
+    [Input('load-button', 'n_clicks')],
+    [State('surveys-list', 'value'),
+     State('upload-survey', 'contents'),
      State('upload-survey', 'filename')]
 )
 def load_survey(n_clicks2, selected_survey, content, filename):
@@ -388,37 +393,37 @@ def load_survey(n_clicks2, selected_survey, content, filename):
         if selected_survey is None and content is None:
             print("selected_survey and content are None")
             survey = []
-            #columns = global_vars.QC_COLUMNS
+            columns = global_vars.QC_COLUMNS
 
         elif selected_survey is None and content is not None:
             survey = parse_contents(content, filename)
             #columns = global_vars.QC_COLUMNS
-            #columns = [{"name": k, "id": k} for k, v in survey[0].items()]
+            columns = [{"name": k, "id": k} for k, v in survey[0].items()]
 
         elif selected_survey is not None:
             print(str(selected_survey))
             df = get_survey(selected_survey)
             survey = df[0]['cases']
-            #columns = [{"name": k, "id": k} for k, v in df[0].items()]
+            columns = [{"name": k, "id": k} for k, v in df[0].items()]
 
         print("the survey is: {}".format(survey))
         text = "You have {} cases in the database".format(len(survey))
-        return survey, text
+        return [survey, text, survey, columns]
 
 @app.callback(
     [Output('tab-content', 'children')],
     [Input('date-picker-select', 'start_date'),
      Input('date-picker-select', 'end_date'),
      Input('control-tabs', 'value'),
+     Input('survey-store', 'data'),
      Input('run-selector', 'n_clicks'),
      Input('run-list', 'value'),
-     Input('survey-store', 'data'),
      Input('analysis-store', 'data'),
      Input('sample-store', 'data'),
      ],
      [State("url", "pathname")]
 )
-def render_content(start_date, end_date, tab, n_clicks, selected_run, survey_samples, analysis_samples, bifrost_samples, pathname):
+def render_content(start_date, end_date, tab, survey_samples,  n_clicks, selected_run, analysis_samples, bifrost_samples, pathname):
     print('render_content')
     if start_date is not None:
         start_date = dt.strptime(re.split('T| ', start_date)[0], '%Y-%m-%d')
@@ -459,11 +464,11 @@ def render_content(start_date, end_date, tab, n_clicks, selected_run, survey_sam
                 print("the columns are: {}".format(columns))
                 print("the survey samples are: {}".format(samples))
 
-            return hc.html_tab_surveys(section, samples, columns)
+            return hc.html_tab_surveys(section)
         elif section == "sample-report":
             samples=[]
             columns=[]
-            return hc.html_tab_surveys(section, samples, columns)
+            return hc.html_tab_surveys(section)
         else:
             raise PreventUpdate
 
@@ -798,9 +803,9 @@ def update_figures(derived_virtual_selected_rows):
 @app.callback(
     [Output('alert', 'displayed'),
      Output('confirm', 'displayed')],
-    [Input('save-survey', 'n_clicks'),
-     Input('survey-store', 'data')],
-     [State('survey-name', 'value')]
+    [Input('save-survey', 'n_clicks')],
+     [State('survey-store', 'data'),
+     State('survey-name', 'value')]
 )
 def output_survey_toDB(n_clicks, cases, name):
     print("Output_survey_toDB")
