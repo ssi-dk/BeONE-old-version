@@ -8,7 +8,7 @@ from bson.objectid import ObjectId
 import components.global_vars as global_vars
 import keys
 
-bifrostapi.connect(mongoURI='mongodb://localhost:27017/bifrost_upgrade_test', connection_name="local")
+bifrostapi.add_URI(mongoURI='mongodb://localhost:27017/bifrost_upgrade_test', connection_name="local")
 connection = bifrostapi.get_connection("local")
 
 pd.options.mode.chained_assignment = None

@@ -738,7 +738,7 @@ def geomap():
 def save_survey(data_dict):
     print("save_survey")
 
-    bifrostapi.connect(mongoURI='mongodb://localhost:27017/bifrost_upgrade_test', connection_name="local")
+    bifrostapi.add_URI(mongoURI='mongodb://localhost:27017/bifrost_upgrade_test', connection_name="local")
 
     connection = bifrostapi.get_connection("local")
     db = connection['bifrost_upgrade_test']
@@ -764,7 +764,7 @@ def save_survey(data_dict):
         )
 
 def sidebar2():
-    bifrostapi.connect(mongoURI='mongodb://localhost:27017/bifrost_upgrade_test', connection_name="local")
+    bifrostapi.add_URI(mongoURI='mongodb://localhost:27017/bifrost_upgrade_test', connection_name="local")
 
     run_list = bifrostapi.get_run_list("local")
     run_options = [

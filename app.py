@@ -135,7 +135,7 @@ tab_style = {
     'borderRight': '1px solid #d6d6d6',
     'borderLeft': '1px solid #d6d6d6',
     'padding': '4px 4px 4px 4px',
-
+    'transform': 'rotate(180deg)',
 }
 
 tab_selected_style = {
@@ -143,10 +143,11 @@ tab_selected_style = {
     'height': '100px',
     'borderTop': '1px solid #d6d6d6',
     'borderBottom': '1px solid #d6d6d6',
-    'borderRight': '3px solid #249bab',
+    'borderLeft': '3px solid #249bab',
     'padding': '10px 4px 4px 4px',
     'fontWeight': 'bold',
-    'color': '#249bab'
+    'color': '#249bab',
+    'transform': 'rotate(180deg)',
 }
 
 app.layout = html.Div(
@@ -180,7 +181,7 @@ app.layout = html.Div(
                                 dcc.Tab(label='Analyses', value='analyses-tab', style=tab_style, selected_style=tab_selected_style),
                                 dcc.Tab(label='Reports', value='reports-tab', style=tab_style, selected_style=tab_selected_style),
                                 dcc.Tab(label='Isolates', value='isolates-tab', style=tab_style, selected_style=tab_selected_style),
-                            ], vertical=False, style={'writing-mode':'sideways-lr',
+                            ], vertical=False, style={'writing-mode':'vertical-rl',
                                                       'width': '70px',
                                                       'font-size': 18},
                                 parent_style={'float': 'left'}
@@ -327,7 +328,8 @@ def update_selected_samples(n_clicks, rows, selected_rows):
 )
 def store_survey(rows, selected_rows):
     print("store_survey")
-    if rows == [] or rows is None:
+    if rows == [] or rows is None or rows == [{}]:
+        print("no rows")
         raise PreventUpdate
 
     if selected_rows == []:
@@ -358,16 +360,21 @@ def store_survey(rows, selected_rows):
 @app.callback(
     [Output('metadata-table', 'data'),
      Output('metadata-table', 'columns')],
-    [Input('file-store', 'data')]
+    [Input('file-store', 'data'),
+     Input('tab-placeholder','children')]
 )
-def get_metadata(cases):
+def get_metadata(cases, _):
     print("get_metadata")
     if cases is None or cases == []:
+        print("The file-store is empty")
         survey = []
         columns = global_vars.QC_COLUMNS
     else:
+
         survey = cases
         columns = [{"name": k, "id": k} for k, v in survey[0].items()]
+        print("The cases are: {}".format(cases))
+        print("The columns are: {}".format(cases))
 
     return survey, columns
 
@@ -413,15 +420,15 @@ def load_survey(n_clicks2, selected_survey, content, filename):
     [Input('date-picker-select', 'start_date'),
      Input('date-picker-select', 'end_date'),
      Input('control-tabs', 'value'),
-     Input('survey-store', 'data'),
      Input('run-selector', 'n_clicks'),
      Input('run-list', 'value'),
      Input('analysis-store', 'data'),
      Input('sample-store', 'data'),
      ],
-     [State("url", "pathname")]
+     [State("url", "pathname"),
+      State('survey-store', 'data')]
 )
-def render_content(start_date, end_date, tab, survey_samples,  n_clicks, selected_run, analysis_samples, bifrost_samples, pathname):
+def render_content(start_date, end_date, tab,  n_clicks, selected_run, analysis_samples, bifrost_samples, pathname, survey_samples):
     print('render_content')
     if start_date is not None:
         start_date = dt.strptime(re.split('T| ', start_date)[0], '%Y-%m-%d')
@@ -808,10 +815,12 @@ def update_figures(derived_virtual_selected_rows):
 def output_survey_toDB(n_clicks, cases, name):
     print("Output_survey_toDB")
     if n_clicks == 0:
+        print("save button not clicked")
         raise PreventUpdate
     else:
         if cases is not None:
             if name is None or name == '':
+                print("no name selected")
                 raise PreventUpdate
             else:
                 print('I am saving the survey')
