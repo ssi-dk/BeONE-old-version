@@ -350,6 +350,7 @@ def html_tab_surveys(section):
     #print("the provided survey samples are: {}".format(data))
     if section == "":
         view = html.Div([
+            html.Div(id="tab-placeholder", style={"display": "none"}),
             html.Div([
                 html.Div([
                     dcc.Dropdown(
