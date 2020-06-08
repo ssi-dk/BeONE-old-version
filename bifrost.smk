@@ -78,7 +78,49 @@ rule make_components_dir:
     shell:
         "mkdir {output};"
 
-
+# TODO: temporarily shelved idea for anonymizing samples 
+# rule_name = "create_sample_folder"
+# rule create_sample_folder:
+#     # Static
+#     message:
+#         "Running step:" + rule_name
+#     threads:
+#         global_threads
+#     resources:
+#         memory_in_GB = global_memory_in_GB
+#     log:
+#         out_file = component + "/log/" + rule_name + ".out.log",
+#         err_file = component + "/log/" + rule_name + ".err.log",
+#     benchmark:
+#         component + "/benchmarks/" + rule_name + ".benchmark"
+#     message:
+#         "Running step: {rule}"
+#     # Dynamic
+#     input:
+#         component,
+#         raw_data_folder = raw_data_folder
+#     output:
+#         sample_folder = directory(sample_folder)
+#     params:
+#         rename_samples = rename_samples
+#     run:
+#         rename_samples = bool(params.rename_samples)
+#         raw_data_folder = str(input.raw_data_folder)
+#         sample_folder = str(output.sample_folder)
+#         print(rename_samples, type(rename_samples))
+#         if rename_samples is False:
+#             shell("ln -s {raw_data_folder} {sample_folder}")
+#         else:
+#             shell("mkdir {sample_folder}")
+#             i = 0
+#             for file in sorted(os.listdir(raw_data_folder)):
+#                 print(file)
+#                 result = re.search(config["read_pattern"], file)
+#                 if result and os.path.isfile(os.path.realpath(os.path.join(raw_data_folder, file))):
+#                     i = i + 1
+#                     new_sample_name = "SSI{}_R1.fastq.gz".format(i)
+#                     print(new_sample_name)
+#                     shell("ln -s {} {};".format( os.path.realpath(os.path.join(raw_data_folder, file)), os.path.join(sample_folder, new_sample_name)))
 
 
 rule_name = "copy_run_info"
@@ -422,10 +464,13 @@ rule set_sample_species:
                         if pandas.isna(provided_species):
                             provided_species = None
                         else:
+                            provided_species = provided_species.strip()
                             species_db = datahandling.get_ncbi_species(
                                 provided_species)
                             if species_db is None:
                                 provided_species = "*" + str(provided_species)
+                            else:
+                                provided_species = species_db # Use proper name if exists.
                         sample_db["properties"]["provided_species"] = provided_species
                         datahandling.save_sample(sample_db, sample_config)
 
