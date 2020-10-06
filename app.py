@@ -22,14 +22,14 @@ from bifrost.aggregate_report import aggregate_report, update_aggregate_fig, agg
 import components.global_vars as global_vars
 from dash.exceptions import PreventUpdate
 
-# import react_phylo
+import react_phylo
 import pandas as pd
 import plotly.graph_objects as go
 import keys
 
-# os.chdir('/Users/stefanocardinale/Documents/SSI/DATABASES/')
+os.chdir('/Users/stefanocardinale/Documents/SSI/DATABASES/')
 
-# data = pd.read_csv('map_testing_data.csv', sep=";")
+data = pd.read_csv('map_testing_data.csv', sep=";")
 
 def samples_list(active, collection_name=None):
     links = [
@@ -410,11 +410,11 @@ def render_content(start_date, end_date, tab, n_clicks, selected_run, selected_s
                             dbc.Button('Upload Newick File', n_clicks=0, size='sm')])
                     ], style={'padding-bottom': '5px'}),
                     html.Div(id='output-data-upload'),
-                    """react_phylo.Phylo(
+                    react_phylo.Phylo(
                     id='output',
                     data='',
                     NewickString='',
-                        ),"""
+                        ),
             ])
             return [view]
         else:
