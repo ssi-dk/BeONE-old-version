@@ -1,1 +1,2 @@
-.pyc
+*.pyc
+beone_cache/
