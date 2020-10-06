@@ -27,9 +27,9 @@ import pandas as pd
 import plotly.graph_objects as go
 import keys
 
-os.chdir('/Users/stefanocardinale/Documents/SSI/DATABASES/')
+# os.chdir('/Users/stefanocardinale/Documents/SSI/DATABASES/')
 
-data = pd.read_csv('map_testing_data.csv', sep=";")
+# data = pd.read_csv('map_testing_data.csv', sep=";")
 
 def samples_list(active, collection_name=None):
     links = [
